@@ -1,0 +1,1743 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thermo Quest</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* Layout: Arcade Punch (light, brand colours) for start and results; dark neon arcade for the stages and the boss fight. */
+:root {
+  --orange: #FF8243; --pink: #FFC0CB; --yellow: #FCE883; --teal: #069494; --teal-ink: #057A7A;
+  --orange-tint: #FFE6DA; --pink-tint: #FFEEF1; --yellow-tint: #FEF8D9; --teal-tint: #DDF2F2;
+  --ink: #1F2A2E; --muted: #56656A; --line: #E4E8E9; --bg: #FFFFFF;
+  --good: #1E9E62; --good-tint: #D8F3E4; --bad: #E2463A;
+  --b: 3px solid var(--ink);
+  --font: "Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pixel: "Press Start 2P", ui-monospace, "Courier New", monospace;
+  --night: #0D0B1A; --night-2: #19152E; --night-3: #2A2448;
+  --neon-teal: #2EF2E0; --neon-pink: #FF7FB0; --neon-yellow: #FCE883; --neon-orange: #FF8243; --neon-red: #FF4D5E; --neon-green: #4CF08A;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body {
+  font: 16px/1.5 var(--font); min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  transition: background .3s;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+.sub { font-size: .68em; position: relative; bottom: -.25em; line-height: 0; }
+sup { font-size: .68em; line-height: 0; position: relative; top: -.1em; vertical-align: super; font-weight: 800; }
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+/* ---------- shared pieces ---------- */
+.wrap { width: 100%; max-width: 1040px; margin: 0 auto; padding: 16px; flex: 1; display: flex; flex-direction: column; }
+.card { background: #fff; border: var(--b); border-radius: 22px; box-shadow: 6px 6px 0 var(--ink); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: var(--b); border-radius: 16px; padding: 14px 18px; font-weight: 800; font-size: 1.1rem;
+  background: var(--orange); color: var(--ink); box-shadow: 0 5px 0 var(--ink);
+  transition: transform .08s, box-shadow .08s; user-select: none; -webkit-user-select: none;
+}
+.btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.btn.big { width: 100%; font-size: 1.15rem; text-transform: uppercase; letter-spacing: .03em; padding: 16px; }
+.btn.alt { background: #fff; }
+.btn.sm { padding: 9px 14px; font-size: .95rem; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+.pill { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; border: 2px solid var(--ink); border-radius: 99px; padding: 2px 10px; background: #fff; }
+.icon-btn { width: 42px; height: 42px; border-radius: 12px; border: var(--b); background: #fff; display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink); padding: 0; flex: none; }
+.icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.icon-btn svg { width: 20px; height: 20px; }
+.icon-btn.off { opacity: .45; }
+
+/* ---------- top bar ---------- */
+.topbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 2px solid var(--line); background: #fff; }
+.topbar .brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; text-decoration: none; color: var(--ink); }
+.topbar .brand img { width: 38px; height: 38px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--yellow); object-fit: cover; flex: none; }
+.topbar .brand b { font-weight: 800; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.topbar .brand small { display: block; font-size: .72rem; color: var(--muted); font-weight: 600; line-height: 1.2; }
+body.playing .topbar { padding: 6px 12px; }
+body.playing .topbar .brand img { width: 30px; height: 30px; }
+body.playing .icon-btn { width: 36px; height: 36px; }
+body.playing footer { display: none; }
+body.playing .wrap { padding: 8px 12px 10px; }
+
+/* ---------- start screen ---------- */
+.start { display: grid; gap: 22px; grid-template-columns: 1fr; align-items: start; margin: auto 0; padding-block: 8px 20px; }
+.hero { background: var(--teal); color: #fff; padding: 22px; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; }
+.hero h1 { margin: 6px 0 0; font-size: clamp(2rem, 7vw, 3rem); line-height: 1.05; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; }
+.hero h1 em { font-style: normal; background: var(--yellow); color: var(--ink); border: var(--b); border-radius: 14px; padding: 0 10px; display: inline-block; transform: rotate(-2deg); }
+.hero p { margin: 0; max-width: 40ch; font-weight: 600; }
+.hero .pill { color: var(--ink); align-self: flex-start; }
+.hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hero-title { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; min-width: 0; }
+.hero .cast { width: clamp(110px, 30vw, 170px); height: auto; flex: none; object-fit: contain; image-rendering: auto; filter: drop-shadow(4px 4px 0 rgba(31,42,46,.35)); margin: -6px -4px -10px 0; }
+.demo { background: #fff; color: var(--ink); border: var(--b); border-radius: 16px; padding: 12px 14px; font-weight: 700; display: flex; flex-direction: column; gap: 8px; font-size: .95rem; }
+.demo small { font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--teal-ink); }
+.mmap { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mmap .q { background: var(--yellow-tint); border: 2px solid var(--ink); border-radius: 10px; padding: 2px 8px; white-space: nowrap; }
+.mmap .q.mol { background: var(--yellow); }
+.mmap .op { font-size: .8rem; color: var(--teal-ink); font-weight: 800; white-space: nowrap; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mode-card { padding: 12px; border: var(--b); border-radius: 16px; background: var(--yellow-tint); color: var(--ink); }
+.mode-card.dark { background: var(--night); color: #fff; }
+.mode-card b { display: block; font-weight: 800; }
+.mode-card.dark b { font-family: var(--pixel); font-size: .72rem; color: var(--neon-yellow); line-height: 1.6; }
+.mode-card span { font-size: .85rem; display: block; line-height: 1.4; margin-top: 4px; }
+.form { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.form h2 { margin: 0; font-size: 1.25rem; font-weight: 800; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fields .full { grid-column: 1 / -1; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .9rem; }
+label.f input, label.f select { font-size: 16px; padding: 12px; border: 2.5px solid var(--ink); border-radius: 12px; background: #fff; width: 100%; min-width: 0; }
+label.f input:focus, label.f select:focus { outline: 3px solid var(--yellow); outline-offset: 1px; }
+.grp { display: flex; flex-direction: column; gap: 6px; }
+.grp > span { font-weight: 700; font-size: .9rem; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.chip { border: 2.5px solid var(--ink); border-radius: 12px; background: #fff; padding: 8px 12px; font-weight: 700; font-size: .9rem; box-shadow: 0 3px 0 var(--ink); }
+.chip[aria-pressed="true"] { background: var(--yellow); }
+.seg .chip { text-align: center; }
+.seg .chip small { display: block; font-weight: 600; font-size: .75rem; color: var(--muted); }
+.form-err { color: var(--bad); font-weight: 700; font-size: .9rem; min-height: 1.2em; margin: -4px 0 0; }
+.btn.boss-btn { background: var(--night); color: var(--neon-yellow); font-family: var(--pixel); font-size: .78rem; line-height: 1.5; }
+.best { display: flex; justify-content: space-between; font-size: .9rem; color: var(--muted); font-weight: 700; }
+.best b { color: var(--ink); }
+.how { margin: 0; padding-left: 1.2em; font-size: .9rem; font-weight: 600; color: var(--muted); }
+@media (min-width: 760px) { .start { grid-template-columns: 1.05fr 1fr; gap: 28px; } }
+@media (max-width: 420px) { .topbar .brand small { display: none; } .topbar .brand b { font-size: .95rem; }
+  .modes { grid-template-columns: 1fr; } .hero .cast { width: 96px; } }
+
+/* ---------- dark arcade (climb + boss) ---------- */
+body.dark { background: var(--night); }
+body.dark .topbar { background: var(--night); border-bottom-color: var(--night-3); }
+body.dark .topbar .brand, body.dark .topbar .brand small { color: #fff; }
+body.dark .icon-btn { background: var(--night-2); border-color: var(--neon-teal); color: var(--neon-teal); box-shadow: 0 3px 0 var(--neon-teal); }
+body.dark footer { color: #8C86A8; }
+body.dark footer a { color: var(--neon-teal); }
+
+/* ---------- climb ---------- */
+.climb { display: flex; flex-direction: column; gap: 8px; color: #fff; flex: 1; min-height: 0; }
+.chud { display: flex; align-items: center; gap: 10px; font-family: var(--pixel); font-size: .58rem; line-height: 1.5; }
+.chud .lv { color: var(--neon-yellow); }
+.chud .lv span { color: var(--neon-teal); display: block; }
+.chud .pts { margin-left: auto; text-align: right; color: #fff; }
+.chud .pts small { display: block; color: var(--neon-pink); font-size: .5rem; }
+.hearts { display: flex; gap: 4px; }
+.hearts svg { width: 22px; height: 20px; }
+.hearts .lost { opacity: .22; }
+.hearts .breaking { animation: heartbreak .6s; }
+@keyframes heartbreak { 0% { transform: scale(1); } 40% { transform: scale(1.5) rotate(-12deg); } 100% { transform: scale(1); } }
+.calc-btn { font-family: var(--pixel); font-size: .55rem; line-height: 1.3; border: 3px solid var(--neon-yellow); background: var(--night-2); color: var(--neon-yellow); border-radius: 6px; padding: 7px 8px; box-shadow: 0 3px 0 var(--neon-orange); display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.calc-btn svg { width: 16px; height: 16px; }
+.calc-btn[aria-pressed="true"] { background: var(--neon-yellow); color: var(--night); }
+.qstrip { border: 3px solid var(--neon-teal); border-radius: 6px; background: var(--night-2); padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
+.qhead { margin: 0; font-family: var(--pixel); font-size: .62rem; color: var(--neon-yellow); line-height: 1.6; }
+.qtext { margin: 0; font-weight: 700; font-size: 1.25rem; line-height: 1.4; }
+.qtext b { color: var(--neon-yellow); }
+.qeqline { font-weight: 700; font-size: 1.08rem; color: var(--neon-teal); }
+.st { opacity: .75; font-weight: 600; font-size: .85em; }
+.qhint { margin: 0; font-size: 1rem; font-weight: 600; color: #B8B2D6; }
+.crumb { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: .92rem; font-weight: 700; color: #B8B2D6; }
+.crumb .q { border: 2px solid var(--night-3); border-radius: 6px; padding: 0 6px; color: #fff; white-space: nowrap; }
+.crumb .q.now { border-color: var(--neon-yellow); color: var(--neon-yellow); }
+.cwrap { position: relative; align-self: center; line-height: 0; }
+/* phones and upright iPads: compact question panel and controls so the game screen gets the space */
+@media (max-width: 819px), (max-aspect-ratio: 1/1) {
+  body.playing .topbar { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 6px); right: calc(env(safe-area-inset-right, 0px) + 10px); z-index: 20; padding: 0; gap: 6px; border: 0; background: transparent !important; }
+  body.playing .topbar .brand { display: none; }
+  body.playing .chud { padding-right: 116px; min-height: 34px; }
+  body.playing .icon-btn { width: 32px; height: 32px; border-radius: 9px; box-shadow: 0 2px 0 currentColor; }
+  body.playing .icon-btn svg { width: 16px; height: 16px; }
+  body.playing .wrap { padding: 6px 10px 8px; }
+  .climb { gap: 6px; }
+  .chud { font-size: .5rem; gap: 8px; }
+  .chud .hearts svg { width: 18px; height: 16px; }
+  .calc-btn { padding: 5px 7px; font-size: .5rem; }
+  .qstrip { min-height: 0; padding: 6px 10px; gap: 3px; border-width: 2px; }
+  .qhead { font-size: .45rem; }
+  .qtext { font-size: .95rem; line-height: 1.35; }
+  .qeqline { font-size: .85rem; }
+  .qhint { font-size: .8rem; }
+  .crumb { font-size: .75rem; }
+  .toast { font-size: .8rem; padding: 6px 8px; left: 6px; right: 6px; top: 6px; }
+  .pad { gap: 6px; }
+  .pad button { height: 50px; font-size: 1.2rem; box-shadow: 0 3px 0 var(--neon-teal); }
+  .pad .jump { box-shadow: 0 3px 0 var(--neon-orange); }
+  .bq { font-size: 1.05rem; }
+  .qeq { font-size: 1rem; }
+}
+@media (min-width: 600px) and (max-aspect-ratio: 1/1) { /* upright iPad: a bit more room for text */
+  .qtext { font-size: 1.1rem; } .qhint { font-size: .9rem; } .crumb { font-size: .85rem; } .chud { font-size: .58rem; } .pad button { height: 58px; }
+}
+/* laptops and landscape tablets: question panel on the left, big game screen on the right */
+@media (min-width: 820px) and (min-aspect-ratio: 1/1) {
+  body.playing .wrap { max-width: 1500px; }
+  .climb { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; grid-template-rows: auto auto auto auto 1fr;
+    grid-template-areas: "hud game" "q game" "pad game" "keys game" ". game"; column-gap: 20px; row-gap: 12px; align-items: start; }
+  #c-hud { grid-area: hud; flex-wrap: wrap; font-size: .66rem; }
+  #c-hud .hearts svg { width: 26px; height: 24px; }
+  #c-q { grid-area: q; padding: 14px 16px; gap: 8px; }
+  #c-wrap { grid-area: game; justify-self: center; align-self: start; }
+  #pad { grid-area: pad; grid-template-columns: repeat(2, 1fr); }
+  #pad .jump { grid-column: span 2; }
+  .keys { grid-area: keys; text-align: left; line-height: 2.2; }
+  .rotate { display: none !important; }
+}
+#cv { display: block; border: 3px solid var(--neon-teal); border-radius: 6px; background: var(--night); box-shadow: 0 0 0 3px var(--night), 0 0 22px rgba(46,242,224,.3); touch-action: none; }
+.toast { position: absolute; left: 8px; right: 8px; top: 8px; line-height: 1.4; font-weight: 700; font-size: .92rem; padding: 8px 10px; border-radius: 6px; border: 3px solid var(--neon-green); background: rgba(13,11,26,.94); color: #fff; z-index: 3; pointer-events: none; }
+.toast.bad { border-color: var(--neon-red); }
+.toast b { color: var(--neon-green); }
+.toast.bad b { color: var(--neon-red); }
+.cover { position: fixed; inset: 0; background: rgba(13,11,26,.94); overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px 18px; line-height: 1.5; z-index: 25; }
+.cover h2 { font-family: var(--pixel); color: var(--neon-yellow); font-size: clamp(1rem, 5vw, 1.5rem); line-height: 1.4; margin: 0; text-shadow: 3px 3px 0 var(--neon-orange); }
+.cover h2.red { color: var(--neon-red); text-shadow: 3px 3px 0 var(--night-3); }
+.cover .lvname { font-family: var(--pixel); font-size: .6rem; color: var(--neon-teal); }
+.cover p { margin: 0; font-weight: 600; max-width: 32ch; font-size: .95rem; }
+.cover ul { margin: 0; padding-left: 1.1em; text-align: left; font-weight: 600; font-size: .9rem; max-width: 34ch; }
+.cover img { width: 90px; height: 90px; object-fit: contain; }
+.cover .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.paused { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-family: var(--pixel); font-size: .55rem; line-height: 1.5; color: var(--night); background: var(--neon-yellow); padding: 6px 10px; border: 3px solid var(--night); z-index: 3; white-space: nowrap; }
+.pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; max-width: 560px; width: 100%; align-self: center; }
+.pad button { height: 60px; border: 3px solid var(--neon-teal); background: var(--night-2); color: var(--neon-teal); border-radius: 10px; box-shadow: 0 4px 0 var(--neon-teal); font-size: 1.4rem; font-weight: 800; touch-action: none; display: grid; place-items: center; padding: 0; }
+.pad button.on { transform: translateY(3px); box-shadow: 0 1px 0 var(--neon-teal); background: var(--night-3); }
+.pad .jump { font-family: var(--pixel); font-size: .6rem; color: var(--night); background: var(--neon-yellow); border-color: var(--neon-yellow); box-shadow: 0 4px 0 var(--neon-orange); }
+.pad .jump.on { background: var(--neon-orange); box-shadow: 0 1px 0 var(--neon-orange); }
+.keys { text-align: center; font-size: .8rem; font-weight: 600; color: #B8B2D6; margin: 0; }
+.keys kbd { font-family: var(--pixel); font-size: .5rem; border: 2px solid var(--night-3); border-radius: 4px; padding: 2px 5px; color: #fff; background: var(--night-2); }
+.rotate { display: none; text-align: center; font-size: .8rem; color: var(--neon-yellow); font-weight: 700; margin: 0; }
+@media (hover: none), (pointer: coarse) { .keys { display: none; } }
+@media (hover: hover) and (pointer: fine) { .pad { display: none; } }
+body.touch .pad { display: grid; } body.touch .keys { display: none; }
+@media (orientation: landscape) and (max-height: 500px) { .rotate { display: block; } }
+
+/* ---------- boss fight ---------- */
+.boss { display: flex; flex-direction: column; gap: 14px; color: #fff; margin-block: 4px 16px; position: relative; }
+.arena { border: 3px solid var(--neon-teal); border-radius: 6px; background: var(--night-2); box-shadow: 0 0 0 3px var(--night), 0 0 22px rgba(46,242,224,.35); overflow: hidden; position: relative; }
+.arena::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 2px, transparent 2px 4px); }
+.bhud { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 12px 12px 0; font-family: var(--pixel); font-size: .62rem; line-height: 1.6; position: relative; z-index: 2; }
+.hp-who { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hp-who.boss-side { align-items: flex-end; text-align: right; flex: 1; }
+.hpbar { width: min(220px, 100%); height: 16px; border: 3px solid #fff; background: var(--night); padding: 2px; }
+.hpbar i { display: block; height: 100%; background: var(--neon-pink); width: 100%; transition: width .45s steps(8); }
+.hpbar i.low { background: var(--neon-red); }
+.bname { color: var(--neon-pink); }
+.hname { color: var(--neon-teal); }
+.stage { position: relative; height: 210px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 6% 18px; }
+.stage::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 46px; background:
+  repeating-linear-gradient(90deg, rgba(46,242,224,.35) 0 2px, transparent 2px 40px), linear-gradient(var(--night-3), var(--night)); border-top: 2px solid var(--neon-teal); }
+.stars { position: absolute; inset: 0; background-image: radial-gradient(1.5px 1.5px at 12% 20%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 38% 12%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 62% 28%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 84% 10%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 92% 34%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 24% 40%, #fff 50%, transparent 51%); opacity: .7; }
+.sprite { position: relative; z-index: 1; image-rendering: pixelated; }
+.sprite svg, .sprite img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.hero-sp.pic { width: 100px; height: 118px; }
+.mon-sp.pic { width: 150px; height: 150px; }
+.sprite.pic img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; image-rendering: auto; }
+.mon-sp img { transform: scaleX(-1); }
+.hero-sp { width: 86px; animation: bob 1s steps(2) infinite; }
+.mon-sp { width: 140px; animation: bob 1.4s steps(2) infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.hero-sp.atk { animation: lunge-r .45s steps(4); }
+.mon-sp.atk { animation: lunge-l .5s steps(4); }
+@keyframes lunge-r { 50% { transform: translateX(40px); } }
+@keyframes lunge-l { 50% { transform: translateX(-60px) scale(1.08); } }
+.sprite.hit { animation: hit .5s steps(2); }
+@keyframes hit { 0%,50% { filter: brightness(3) saturate(0); transform: translateX(6px); } 25%,75% { filter: none; transform: translateX(-6px); } 100% { filter: none; transform: none; } }
+.sprite.dead { animation: none; opacity: .25; filter: grayscale(1); transform: translateY(16px) rotate(8deg); transition: all .8s steps(6); }
+.bolt { position: absolute; left: 22%; bottom: 70px; width: 30px; height: 30px; z-index: 3; opacity: 0; }
+.bolt img, .bolt svg { width: 100%; height: 100%; display: block; object-fit: contain; }
+.bolt.fly { animation: fly .45s steps(6) forwards; }
+@keyframes fly { 0% { opacity: 1; left: 22%; transform: rotate(0); } 90% { opacity: 1; } 100% { opacity: 0; left: 66%; transform: rotate(360deg); } }
+.dmg { position: absolute; z-index: 4; font-family: var(--pixel); font-size: .9rem; color: var(--neon-yellow); text-shadow: 2px 2px 0 var(--night); animation: rise 1s steps(8) forwards; pointer-events: none; }
+.dmg.hurt { color: var(--neon-red); }
+@keyframes rise { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-50px); opacity: 0; } }
+.flash { position: absolute; inset: 0; background: var(--neon-red); opacity: 0; pointer-events: none; z-index: 5; }
+.flash.on { animation: flash .4s steps(2); }
+@keyframes flash { 0%,50% { opacity: .35; } 100% { opacity: 0; } }
+.charge { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 3px solid var(--neon-teal); font-family: var(--pixel); font-size: .55rem; line-height: 1.5; color: var(--neon-pink); position: relative; z-index: 2; background: var(--night); }
+.charge .cbar { flex: 1; height: 14px; border: 2px solid var(--neon-pink); padding: 2px; min-width: 60px; }
+.charge .cbar i { display: block; height: 100%; width: 0; background: var(--neon-pink); }
+.charge.warn .cbar i { background: var(--neon-red); }
+.charge b { color: #fff; min-width: 2.5em; text-align: right; font-weight: 400; }
+.phase { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); font-family: var(--pixel); color: var(--neon-red); font-size: 1rem; text-shadow: 3px 3px 0 var(--night); z-index: 6; white-space: nowrap; animation: blink .5s steps(1) 4; }
+@keyframes blink { 50% { opacity: 0; } }
+.qbox { border: 3px solid #fff; border-radius: 6px; background: var(--night); padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 0 0 3px var(--night-3); }
+.qtop { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.qtype { margin: 0; font-family: var(--pixel); font-size: .68rem; color: var(--neon-yellow); line-height: 1.6; }
+.bq { margin: 0; font-weight: 700; font-size: 1.25rem; line-height: 1.45; }
+.qeq { background: var(--night-2); border: 2px dashed var(--night-3); border-radius: 6px; padding: 10px; font-weight: 700; font-size: 1.15rem; line-height: 1.7; }
+.qopts { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.qopt { display: flex; gap: 10px; align-items: center; text-align: left; border: 3px solid var(--neon-teal); background: var(--night-2); color: #fff; border-radius: 6px; padding: 10px 12px; font-weight: 700; font-size: 1.05rem; box-shadow: 0 4px 0 var(--neon-teal); line-height: 1.6; transition: transform .08s, box-shadow .08s; }
+.qopt:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--neon-teal); }
+.qopt .k { flex: none; width: 30px; height: 30px; display: grid; place-items: center; font-family: var(--pixel); font-size: .7rem; background: var(--neon-teal); color: var(--night); }
+.qopt.right { border-color: var(--neon-green); box-shadow: 0 4px 0 var(--neon-green); background: #12351F; }
+.qopt.right .k { background: var(--neon-green); }
+.qopt.wrong { border-color: var(--neon-red); box-shadow: 0 4px 0 var(--neon-red); background: #3A1420; }
+.qopt.wrong .k { background: var(--neon-red); }
+.qopt:disabled { cursor: default; }
+.qopt:disabled:not(.right):not(.wrong) { opacity: .55; }
+.qfb { border: 3px solid var(--neon-yellow); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--night-2); }
+.qfb.no { border-color: var(--neon-red); }
+.qfb p { margin: 0; font-weight: 600; }
+.qfb .ans { color: var(--neon-green); font-weight: 800; }
+.qfb .work { color: #D6D1F0; font-size: .95rem; }
+.pbtn { font-family: var(--pixel); font-size: .72rem; line-height: 1.5; border: 3px solid var(--night); background: var(--neon-yellow); color: var(--night); padding: 14px 16px; box-shadow: 0 4px 0 var(--neon-orange); border-radius: 4px; }
+.pbtn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--neon-orange); }
+.pbtn.ghost { background: transparent; color: var(--neon-teal); border-color: var(--neon-teal); box-shadow: 0 4px 0 var(--neon-teal); }
+@media (min-width: 760px) {
+  .qopts { grid-template-columns: 1fr 1fr; }
+  .stage { height: 250px; }
+  .hero-sp { width: 110px; }
+  .mon-sp { width: 180px; }
+  .hero-sp.pic { width: 130px; height: 152px; }
+  .mon-sp.pic { width: 200px; height: 200px; }
+  .bhud { font-size: .72rem; }
+}
+.bend { margin: auto; text-align: center; display: flex; flex-direction: column; gap: 18px; align-items: center; color: #fff; padding: 24px 8px; }
+.bend h2 { font-family: var(--pixel); font-size: clamp(1.4rem, 7vw, 2.4rem); margin: 0; line-height: 1.3; color: var(--neon-yellow); text-shadow: 4px 4px 0 var(--neon-orange); }
+.bend.lose h2 { color: var(--neon-red); text-shadow: 4px 4px 0 var(--night-3); }
+.bend p { margin: 0; font-weight: 600; max-width: 36ch; }
+.bend .sprite { width: 120px; }
+.bend .sprite img { height: 140px; object-fit: contain; image-rendering: auto; }
+.bend .sprite.down { opacity: .35; filter: grayscale(1); transform: rotate(-90deg); }
+.bend-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.hits-left { color: #fff; }
+.start-blink { font-family: var(--pixel); font-size: .6rem; color: var(--neon-teal); animation: blink 1s steps(1) infinite; }
+
+/* ---------- results ---------- */
+.results { display: grid; gap: 18px; grid-template-columns: 1fr; padding-block: 8px 20px; }
+.res-hero { background: var(--teal); color: #fff; padding: 22px; display: flex; gap: 18px; align-items: center; }
+.big-ring { --p: 0; width: 120px; height: 120px; flex: none; border-radius: 50%; border: var(--b); background: conic-gradient(var(--yellow) calc(var(--p) * 1%), #fff 0); display: grid; place-items: center; }
+.big-ring span { width: 88px; height: 88px; border-radius: 50%; background: #fff; color: var(--ink); border: var(--b); display: grid; place-items: center; font-weight: 800; font-size: 1.7rem; }
+.res-hero h2 { margin: 0 0 4px; font-size: 1.6rem; line-height: 1.15; font-weight: 800; text-wrap: balance; }
+.res-hero p { margin: 0; font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.stat { border: var(--b); border-radius: 14px; padding: 8px 10px; background: #fff; box-shadow: 0 4px 0 var(--ink); }
+.stat span { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stat b { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat:nth-child(1) { background: var(--yellow-tint); } .stat:nth-child(2) { background: var(--pink-tint); } .stat:nth-child(3) { background: var(--teal-tint); } .stat:nth-child(4) { background: var(--orange-tint); }
+.panel { padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel h3 { margin: 0; font-size: 1.15rem; font-weight: 800; }
+.bars { display: flex; flex-direction: column; gap: 8px; }
+.bar-row { display: grid; grid-template-columns: 10.5em 1fr 3.2em; gap: 10px; align-items: center; font-weight: 700; font-size: .92rem; }
+.bar { height: 14px; border: 2px solid var(--ink); border-radius: 99px; overflow: hidden; background: #fff; }
+.bar i { display: block; height: 100%; background: var(--teal); }
+.bar i.low { background: var(--orange); }
+.bar-row .n { text-align: right; font-variant-numeric: tabular-nums; }
+.weak { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.weak li { border: 2.5px solid var(--ink); border-radius: 14px; padding: 10px 12px; background: var(--orange-tint); }
+.weak li b { display: block; }
+.weak li span { font-size: .9rem; }
+.weak li.good { background: var(--good-tint); }
+.review { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.review li { border-bottom: 2px solid var(--line); padding: 6px 0 8px; font-size: .95rem; }
+.review li:last-child { border-bottom: 0; }
+.review .you { color: var(--bad); font-weight: 700; }
+.review .key { color: var(--good); font-weight: 800; }
+.review .tag { font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.send { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 700; padding: 12px 14px; border: 2.5px solid var(--ink); border-radius: 14px; background: var(--teal-tint); }
+.send.err { background: var(--orange-tint); }
+.res-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.res-actions .btn { flex: 1 1 200px; }
+@media (min-width: 760px) {
+  .results { grid-template-columns: 1fr 1fr; align-items: start; }
+  .results .span { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .res-hero { flex-direction: column; text-align: center; }
+  .bar-row { grid-template-columns: 8.6em 1fr 3em; font-size: .85rem; }
+}
+footer { text-align: center; color: var(--muted); font-size: .82rem; padding: 14px 16px 20px; }
+footer a { color: var(--teal-ink); font-weight: 700; }
+canvas#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ---------- Thermo Quest additions ---------- */
+:root { --hot: #FF8243; --cold: #2EF2E0; }
+.thermo-demo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.thermo-demo .q.hot { background: var(--orange-tint); }
+.thermo-demo .q.cold { background: var(--teal-tint); }
+.modes.three { grid-template-columns: 1fr 1fr 1fr; }
+.mode-card small { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--teal-ink); margin-top: 6px; }
+.mode-card.dark small { color: var(--neon-pink); }
+.mode-card.pure { background: var(--pink-tint); }
+@media (max-width: 560px) { .modes.three { grid-template-columns: 1fr; } }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 560px; width: 100%; align-self: center; }
+.choices.one { grid-template-columns: 1fr; }
+.choices .qopt { font-size: .98rem; padding: 8px 10px; line-height: 1.4; }
+.choices .pbtn { grid-column: 1 / -1; }
+.qfbline { margin: 0; font-weight: 600; font-size: .95rem; color: #D6D1F0; }
+.qfbline b.ok { color: var(--neon-green); }
+.qfbline b.no { color: var(--neon-red); }
+.qeq svg { display: block; width: 100%; max-width: 360px; height: auto; margin: 0 auto; }
+.qeq table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.qeq th, .qeq td { border: 2px solid var(--night-3); padding: 4px 8px; text-align: center; }
+.qeq th { color: var(--neon-yellow); font-weight: 700; }
+.pad.three { grid-template-columns: 1fr 1.3fr 1fr; }
+.pad .drop { font-family: var(--pixel); font-size: .6rem; color: var(--night); background: var(--neon-teal); border-color: var(--neon-teal); box-shadow: 0 4px 0 #0E8F86; }
+.pad .drop.on { box-shadow: 0 1px 0 #0E8F86; }
+.cover .big-eq { font-weight: 800; font-size: 1.05rem; color: var(--neon-teal); }
+.cover .why { max-width: 36ch; }
+.cover .tagline { font-family: var(--pixel); font-size: .55rem; color: var(--neon-pink); line-height: 1.6; }
+.cover .ok-t { color: var(--neon-green); }
+.cover .no-t { color: var(--neon-red); }
+.toast.low { top: auto; bottom: 8px; }
+.cover .tut { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.cover .tut span { border: 3px solid; border-radius: 6px; padding: 6px 10px; font-weight: 800; font-size: .85rem; }
+.cover .tut .h { border-color: var(--neon-orange); color: var(--neon-orange); }
+.cover .tut .c { border-color: var(--neon-teal); color: var(--neon-teal); }
+@media (min-width: 820px) and (min-aspect-ratio: 1/1) {
+  .climb { grid-template-areas: "hud game" "q game" "pad game" "choices game" "keys game" ". game"; }
+  #c-choices { grid-area: choices; grid-template-columns: 1fr; }
+  #pad.three { grid-template-columns: 1fr 1.3fr 1fr; }
+  #pad.three .jump, #pad.three .drop { grid-column: auto; }
+}
+@media (max-width: 819px), (max-aspect-ratio: 1/1) {
+  .choices .qopt { font-size: .88rem; padding: 6px 8px; }
+  .choices { gap: 6px; }
+}
+</style>
+</head>
+<body>
+
+<audio id="mus-menu" loop preload="none" src="Retro%20Game%20Loop.mp3"></audio>
+<audio id="mus-stage" loop preload="none" src="Pixel%20Rush.mp3"></audio>
+<audio id="mus-boss" loop preload="none" src="Pixel%20Battle.mp3"></audio>
+
+<header class="topbar">
+  <a class="brand" href="https://scienceiskhool.github.io/scienceiskhool/" target="_blank" rel="noopener">
+    <img src="https://scienceiskhool.github.io/scienceiskhool/assets/img/head.png" alt="" onerror="this.style.visibility='hidden'">
+    <span><b>Thermo Quest</b><small>Science is Khool · Chemical energetics</small></span>
+  </a>
+  <button class="icon-btn" id="btn-quit" type="button" aria-label="Back to start" title="Back to start" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/></svg>
+  </button>
+  <button class="icon-btn" id="btn-music" type="button" aria-label="Music on" title="Music">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  </button>
+  <button class="icon-btn" id="btn-sound" type="button" aria-label="Sound effects on" title="Sound effects">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>
+  </button>
+</header>
+
+<main class="wrap">
+
+  <!-- START -->
+  <section id="scr-start" class="start">
+    <div class="card hero">
+      <div class="hero-top">
+        <div class="hero-title"><span class="pill">Sec 3–4 Chemistry · Chemical energetics</span>
+        <h1>Thermo <em>Quest</em></h1></div>
+        <img class="cast" src="freezeburn.png" alt="Dr. Freezeburn" onerror="this.remove()">
+      </div>
+      <p>Dr. Freezeburn has scrambled every thermometer in the lab. Sort the reactions, master the energy hills, then beat him in a showdown.</p>
+      <div class="demo" aria-label="Example">
+        <small>Hot or cold?</small>
+        <div class="mmap thermo-demo"><span class="q hot">Mg + HCl</span><span class="op">gives out heat → temp ↑ →</span><span class="q hot">EXOTHERMIC</span></div>
+        <div class="mmap thermo-demo"><span class="q cold">NH<span class="sub">4</span>NO<span class="sub">3</span> dissolves</span><span class="op">takes in heat → temp ↓ →</span><span class="q cold">ENDOTHERMIC</span></div>
+      </div>
+      <div class="modes three">
+        <div class="mode-card"><b>1 · Thermo Blocks</b><span>Steer falling reactions into the HOT or COLD well before they land.</span><small>Everyone</small></div>
+        <div class="mode-card pure"><b>2 · Energy Hill</b><span>Collect energy to get over the activation-energy hump, then label the diagram.</span><small>Pure Chemistry</small></div>
+        <div class="mode-card dark"><b>BOSS FIGHT</b><span>3 hearts. Out-think Dr. Freezeburn.</span><small>Everyone</small></div>
+      </div>
+    </div>
+
+    <form class="card form" id="form-start" novalidate>
+      <h2>Ready, scientist?</h2>
+      <div class="fields">
+        <label class="f full" for="in-name">Name<input id="in-name" name="name" maxlength="60" autocomplete="name" required></label>
+        <label class="f" for="in-cls">Class<select id="in-cls" name="cls" required><option value="">Choose…</option></select></label>
+        <label class="f" for="in-reg">Register no.<input id="in-reg" name="reg" inputmode="numeric" pattern="[0-9]*" maxlength="2" required></label>
+      </div>
+      <div class="grp"><span>Course</span>
+        <div class="seg" id="seg-lv">
+          <button type="button" class="chip" data-lv="easy" aria-pressed="true">Combined Science<small>Thermo Blocks + Boss</small></button>
+          <button type="button" class="chip" data-lv="hard" aria-pressed="false">Pure Chemistry<small>+ Energy Hill</small></button>
+        </div>
+      </div>
+      <p class="form-err" id="form-err" role="alert"></p>
+      <button class="btn big" type="button" id="btn-go">Start the quest ▶</button>
+      <ul class="how">
+        <li>Phone or iPad: use the on-screen buttons.</li>
+        <li>Laptop: arrow keys (or A / D) to move, ▼ (or S) to drop, Space to jump.</li>
+        <li>Combined Science: about 10 min. Pure Chemistry: about 15 min.</li>
+      </ul>
+      <div class="best"><span>Your best on this device</span><b id="txt-best">–</b></div>
+    </form>
+  </section>
+
+  <!-- STAGES 1 and 2 (shared canvas) -->
+  <section id="scr-play" class="climb" hidden>
+    <div class="chud" id="c-hud">
+      <div class="lv" id="c-lv">STAGE 1<span>WAVE 1/4</span></div>
+      <div class="pts"><small>POINTS</small><span id="c-pts">0</span></div>
+    </div>
+    <div class="qstrip" id="c-q" aria-live="polite"></div>
+    <div class="cwrap" id="c-wrap">
+      <canvas id="cv" width="400" height="560" aria-label="Game screen"></canvas>
+      <div class="toast" id="c-toast" hidden></div>
+      <div class="cover" id="c-cover" hidden></div>
+    </div>
+    <p class="rotate">Turn your phone upright for a bigger view.</p>
+    <div class="pad three" id="pad"></div>
+    <div class="choices" id="c-choices" hidden></div>
+    <p class="keys" id="keys"></p>
+  </section>
+
+  <!-- BOSS -->
+  <section id="scr-boss" class="boss" hidden>
+    <div class="arena">
+      <div class="stars"></div>
+      <div class="bhud">
+        <div class="hp-who"><span class="hname">HERO</span><div class="hearts" id="b-hearts"></div></div>
+        <div class="hp-who boss-side"><span class="bname"><span id="b-name">DR. FREEZEBURN</span> <span class="hits-left" id="b-left"></span></span><div class="hpbar"><i id="b-hp"></i></div></div>
+      </div>
+      <div class="stage" id="b-stage">
+        <div class="sprite hero-sp" id="b-hero"></div>
+        <div class="bolt" id="b-bolt"></div>
+        <div class="sprite mon-sp" id="b-mon"></div>
+        <div class="flash" id="b-flash"></div>
+      </div>
+      <div class="charge" id="b-charge"><span id="b-charge-lbl">FREEZEBURN IS CHARGING</span><div class="cbar"><i id="b-cbar"></i></div><b id="b-secs">40</b></div>
+    </div>
+    <div class="qbox">
+      <div class="qtop"><p class="qtype" id="b-qtype">INCOMING ATTACK</p></div>
+      <div class="qeq" id="b-qeq" hidden></div>
+      <p class="bq" id="b-qtext"></p>
+      <div class="qopts" id="b-opts"></div>
+      <div class="qfb" id="b-fb" hidden aria-live="polite"><p id="b-fb-msg"></p><button class="pbtn" type="button" id="b-next">NEXT ▶</button></div>
+    </div>
+  </section>
+
+  <section id="scr-bend" class="bend" hidden>
+    <h2 id="be-title">VICTORY!</h2>
+    <div class="sprite" id="be-sprite"></div>
+    <p id="be-msg"></p>
+    <span class="start-blink">PRESS BUTTON TO CONTINUE</span>
+    <div class="bend-btns">
+      <button class="pbtn" type="button" id="be-retry" hidden>TRY AGAIN ↻</button>
+      <button class="pbtn" type="button" id="be-go">SEE RESULTS ▶</button>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="scr-result" class="results" hidden>
+    <div class="card res-hero span">
+      <div class="big-ring" id="res-ring"><span id="res-pct">0%</span></div>
+      <div><h2 id="res-title">Nice work!</h2><p id="res-sub"></p></div>
+    </div>
+    <div class="stats span">
+      <div class="stat"><span>Score</span><b id="res-correct">0</b></div>
+      <div class="stat"><span>Accuracy</span><b id="res-acc">0%</b></div>
+      <div class="stat"><span>Time</span><b id="res-time">0:00</b></div>
+      <div class="stat"><span>Points</span><b id="res-points">0</b></div>
+    </div>
+    <div class="card panel">
+      <h3>Topics</h3>
+      <div class="bars" id="res-bars"></div>
+      <h3>Work on these</h3>
+      <ul class="weak" id="res-weak"></ul>
+    </div>
+    <div class="card panel">
+      <h3>Review</h3>
+      <ul class="review" id="res-review"></ul>
+    </div>
+    <div class="send span" id="send" aria-live="polite"><span id="send-msg">Sending your results…</span><button class="btn alt sm" id="btn-resend" type="button" hidden>Try again</button></div>
+    <div class="res-actions span">
+      <button class="btn big" id="btn-again" type="button">Play again ↻</button>
+      <button class="btn big alt" id="btn-home" type="button">Change settings</button>
+    </div>
+  </section>
+</main>
+
+<footer>Made for <a href="https://www.instagram.com/scienceiskhool/" target="_blank" rel="noopener">@scienceiskhool</a></footer>
+<canvas id="confetti" hidden></canvas>
+<script>
+(function () {
+"use strict";
+
+/* =================== SETTINGS (safe to edit) =================== */
+var SUBMIT_URL = "https://script.google.com/macros/s/AKfycbxCTjRCQzLlWXmmY-5R0p75WCmeFLzC9ZM3gNbGRXpcc_d9qHMXdyCn12B4dHpnrBWe/exec";
+var SHEET_TAB = "Energetics";             // tab name in your Google Sheet
+var BOSS_NAME = "DR. FREEZEBURN";
+var MUSIC_VOLUME = 0.25;                  // music volume, 0 to 1. Files (same folder): see the <audio> tags at the top of <body>
+var HITS_TO_WIN = { easy: 6, hard: 8 };   // boss hits needed (easy = Combined Science, hard = Pure Chemistry)
+var BOSS_SECS = { easy: 40, hard: 35 };   // seconds before Freezeburn attacks
+var CRIT_SECS = 12;                       // answering within this many seconds is a critical hit (bonus points only)
+var HEARTS = 3;                           // hearts in the boss fight
+var FALL_SPEED = [50, 60, 72, 90];        // Thermo Blocks: how fast blocks fall in waves 1–4 (bigger = faster)
+var HURT_MS = 2000;                       // boss fight: how long the hurt images show
+var IMG = {                               // sprite files (same folder). Missing files fall back to pixel art.
+  hero: "hero.png", heroHurt: "hero%20hurt.png",
+  boss: "freezeburn.png", bossHurt: "freezeburn%20hurt.png"
+};
+var CLASSES = [];
+["S1", "S2", "S3", "S4"].forEach(function (l) {
+  ["Charity", "Courage", "Faith", "Hope", "Humility", "Integrity", "Love", "Respect", "Joy"].forEach(function (v) { CLASSES.push(l + " " + v); });
+});
+CLASSES.push("S5 Faith", "Visitor", "Other");
+
+/* =================== HELPERS =================== */
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function rint(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function store(k, v) { try { localStorage.setItem("thermoquest_" + k, JSON.stringify(v)); } catch (e) {} }
+function load(k, d) { try { var v = localStorage.getItem("thermoquest_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
+function fmtTime(s) { s = Math.round(s); return Math.floor(s / 60) + ":" + ("0" + s % 60).slice(-2); }
+function stripTags(h) { var d = document.createElement("div"); d.innerHTML = h; return d.textContent; }
+function fx(f) { return esc(f).replace(/([A-Za-z\)])(\d+)/g, '$1<span class="sub">$2</span>'); }
+var SUBS = "₀₁₂₃₄₅₆₇₈₉";
+function fxt(f) { return f.replace(/([A-Za-z\)])(\d+)/g, function (m, a, d) { return a + d.split("").map(function (x) { return SUBS[+x]; }).join(""); }); }
+function cosI(a, b, t) { return a + (b - a) * (1 - Math.cos(Math.PI * t)) / 2; }
+function t1(x) { return (Math.round(x * 10) / 10).toFixed(1); }
+
+/* =================== TOPICS AND COMMON ERRORS =================== */
+var TYPES = {
+  classify: "Exo or endo?", temp: "Temperature change", observe: "Reading observations", physical: "Physical changes", apply: "Everyday uses",
+  sign: "Sign of ΔH", profile: "Energy profiles", bonds: "Bond breaking & making", catalyst: "Catalysts & Ea"
+};
+var ERR = {
+  swap: { label: "Mixed up exo and endo", tip: "Exothermic gives out heat, so the surroundings get hotter. Endothermic takes in heat, so the surroundings get colder." },
+  tempdir: { label: "Temperature the wrong way", tip: "Exothermic: the temperature of the reaction mixture rises. Endothermic: it falls." },
+  flow: { label: "Heat flow direction", tip: "Heat flows from hot to cold. A beaker that feels cold is taking heat in from your hand, so the process is endothermic." },
+  physical: { label: "Physical change mix-up", tip: "Melting and evaporating take in energy (endothermic). Freezing and condensing give out energy (exothermic)." },
+  sign: { label: "ΔH sign mix-up", tip: "ΔH negative = exothermic (products lower in energy). ΔH positive = endothermic (products higher in energy)." },
+  eaarrow: { label: "Wrong Ea arrow", tip: "Activation energy is measured from the reactants' energy level up to the top of the hump." },
+  dharrow: { label: "Wrong ΔH arrow", tip: "ΔH is measured from the reactants' level to the products' level, with the arrow pointing at the products." },
+  bonds: { label: "Bond energy mix-up", tip: "Breaking bonds takes in energy (endothermic). Making bonds gives out energy (exothermic)." },
+  balance: { label: "Bond balance mix-up", tip: "Exothermic: more energy is given out making bonds than is taken in breaking bonds. Endothermic: the other way round." },
+  catalyst: { label: "Catalyst mix-up", tip: "A catalyst gives a route with a lower activation energy. It does not change ΔH." },
+  jam: { label: "Didn't choose a well", tip: "Steer every block into a well before it lands. Tap ▼ to drop it fast once you've decided." },
+  timeout: { label: "Ran out of time", tip: "Dr. Freezeburn struck first. Answer within the time limit." }
+};
+
+/* =================== STAGE 1 CONTENT =================== */
+// a: "exo" or "endo"; k: "rx" (chemical reaction) or "phys" (physical process); lab: the temperature of a mixture can be measured
+var RXS = [
+  { t: "Sodium hydroxide solution is added to dilute hydrochloric acid", s: "NaOH + HCl", a: "exo", k: "rx", lab: 1, why: "Neutralisation gives out heat." },
+  { t: "Magnesium ribbon is added to dilute hydrochloric acid", s: "Mg + HCl", a: "exo", k: "rx", lab: 1, why: "Metals reacting with acids give out heat." },
+  { t: "Methane (natural gas) burns in oxygen", s: "CH4 burns", a: "exo", k: "rx", why: "Combustion gives out heat and light." },
+  { t: "Respiration in your body's cells", s: "Respiration", a: "exo", k: "rx", why: "Respiration releases energy from glucose. That is what keeps you warm." },
+  { t: "Iron powder rusts inside a hand warmer", s: "Iron rusts", a: "exo", k: "rx", lab: 1, why: "Rusting gives out heat. Hand warmers make it happen quickly." },
+  { t: "Water is added to calcium oxide (quicklime)", s: "CaO + water", a: "exo", k: "rx", lab: 1, why: "Calcium oxide reacting with water gives out a lot of heat. Self-heating cans use it." },
+  { t: "Zinc powder is added to copper(II) sulfate solution", s: "Zn + CuSO4", a: "exo", k: "rx", lab: 1, why: "This displacement reaction gives out heat." },
+  { t: "Solid sodium hydroxide dissolves in water", s: "NaOH(s) dissolves", a: "exo", k: "phys", lab: 1, why: "Dissolving sodium hydroxide gives out heat. The solution gets hot." },
+  { t: "Steam condenses into liquid water", s: "Steam condenses", a: "exo", k: "phys", why: "Condensing gives out energy. That is why steam burns are so bad." },
+  { t: "Liquid water freezes into ice", s: "Water freezes", a: "exo", k: "phys", why: "Freezing gives out energy as the particles settle into fixed positions." },
+  { t: "Ammonium nitrate dissolves in water", s: "NH4NO3 dissolves", a: "endo", k: "phys", lab: 1, why: "Dissolving ammonium nitrate takes in heat. Instant cold packs use it." },
+  { t: "Ammonium chloride dissolves in water", s: "NH4Cl dissolves", a: "endo", k: "phys", lab: 1, why: "Dissolving ammonium chloride takes in heat. The solution gets colder." },
+  { t: "Potassium nitrate dissolves in water", s: "KNO3 dissolves", a: "endo", k: "phys", lab: 1, why: "Dissolving potassium nitrate takes in heat. The solution gets colder." },
+  { t: "Calcium carbonate is heated strongly and breaks down into calcium oxide and carbon dioxide", s: "Heating CaCO3", a: "endo", k: "rx", why: "Thermal decomposition needs a constant supply of heat." },
+  { t: "Photosynthesis in a green leaf", s: "Photosynthesis", a: "endo", k: "rx", why: "Plants take in light energy to make glucose." },
+  { t: "Citric acid is mixed with sodium hydrogencarbonate solution", s: "Citric acid + NaHCO3", a: "endo", k: "rx", lab: 1, why: "This fizzy reaction takes in heat, so the mixture gets colder." },
+  { t: "Ice melts into liquid water", s: "Ice melts", a: "endo", k: "phys", why: "Melting takes in energy to overcome the forces between particles." },
+  { t: "Sweat evaporates from your skin", s: "Sweat evaporates", a: "endo", k: "phys", why: "Evaporation takes in heat from your skin, which cools you down." }
+];
+// observations: from/to temperatures are random, "feel" items test the direction of heat flow
+function makeObs() {
+  var a = rint(22, 28) + pick([0, 0.5]), up = rint(5, 12) + pick([0, 0.5]), dn = rint(4, 8) + pick([0, 0.5]);
+  return [
+    { t: "Thermometer in the reaction mixture: " + t1(a) + " °C → " + t1(a + up) + " °C", s: t1(a) + " → " + t1(a + up) + " °C", a: "exo", f: a, to: a + up, why: "The temperature rose, so heat was given out to the surroundings." },
+    { t: "Thermometer in the reaction mixture: " + t1(a + 1) + " °C → " + t1(a + 1 - dn) + " °C", s: t1(a + 1) + " → " + t1(a + 1 - dn) + " °C", a: "endo", f: a + 1, to: a + 1 - dn, why: "The temperature fell, so heat was taken in from the surroundings." },
+    { t: "The test tube feels cold to touch", s: "Feels cold", a: "endo", feel: 1, why: "Heat is flowing from your hand into the test tube. The process takes in heat." },
+    { t: "The beaker feels hot to touch", s: "Feels hot", a: "exo", feel: 1, why: "Heat is flowing from the beaker into your hand. The process gives out heat." },
+    { t: "Energy is transferred from the reaction to the surroundings", s: "Energy → surroundings", a: "exo", why: "Transferring energy to the surroundings is what exothermic means." },
+    { t: "Energy is taken in from the surroundings", s: "Energy ← surroundings", a: "endo", why: "Taking in energy from the surroundings is what endothermic means." },
+    { t: "A thin layer of water under the beaker freezes during the reaction", s: "Water under beaker freezes", a: "endo", feel: 1, why: "The reaction took in so much heat that the water underneath froze." },
+    { t: "The solution steams and the beaker gets warm", s: "Steams, gets warm", a: "exo", why: "The reaction is giving out heat to the surroundings." }
+  ];
+}
+var DH_ITEMS = [
+  { t: "A reaction has ΔH = −57 kJ/mol", s: "ΔH = −57 kJ/mol", a: "exo", sign: 1, why: "A negative ΔH means energy is given out: exothermic." },
+  { t: "A reaction has ΔH = +178 kJ/mol", s: "ΔH = +178 kJ/mol", a: "endo", sign: 1, why: "A positive ΔH means energy is taken in: endothermic." },
+  { t: "A reaction has ΔH = −890 kJ/mol", s: "ΔH = −890 kJ/mol", a: "exo", sign: 1, why: "A negative ΔH means energy is given out: exothermic." },
+  { t: "A reaction has ΔH = +52 kJ/mol", s: "ΔH = +52 kJ/mol", a: "endo", sign: 1, why: "A positive ΔH means energy is taken in: endothermic." }
+];
+var WAVES = [
+  { name: "EXO OR ENDO?", mode: "eo", tip: "Exothermic → HOT well (◀). Endothermic → COLD well (▶)." },
+  { name: "HOT OR COLD?", mode: "tr", tip: "Will the temperature of the mixture <b>rise</b> (◀) or <b>fall</b> (▶)?" },
+  { name: "READ THE CLUES", mode: "eo", tip: "No reaction names now. Use the observation to decide." },
+  { name: "MIXED RUSH", mode: "eo", tip: "Everything mixed and falling faster. Stay cool!" }
+];
+function balanced(list, n) {
+  var ex = shuffle(list.filter(function (x) { return x.a === "exo"; })), en = shuffle(list.filter(function (x) { return x.a === "endo"; })), out = [];
+  var nEx = Math.ceil(n / 2), nEn = n - nEx; if (Math.random() < .5) { var t = nEx; nEx = nEn; nEn = t; }
+  out = ex.slice(0, nEx).concat(en.slice(0, nEn));
+  while (out.length < n) { var rest = list.filter(function (x) { return out.indexOf(x) < 0; }); if (!rest.length) break; out.push(pick(rest)); }
+  return shuffle(out);
+}
+function buildWaves() {
+  var used = [];
+  function take(list, n) { var l = balanced(list.filter(function (x) { return used.indexOf(x) < 0; }), n); used = used.concat(l); return l; }
+  var w2 = take(RXS.filter(function (x) { return x.lab; }), 5);
+  var w1 = take(RXS, 6);
+  var obs = makeObs(), w3 = balanced(obs, 5);
+  var restObs = obs.filter(function (x) { return w3.indexOf(x) < 0; });
+  var w4src = take(RXS, 3).concat(balanced(restObs, 1));
+  if (G.lv === "hard") w4src = w4src.concat(balanced(DH_ITEMS, 2)); else w4src = w4src.concat(take(RXS, 2));
+  return [w1, w2, w3, shuffle(w4src)].map(function (items, wi) {
+    return items.map(function (it) { return blockFor(it, WAVES[wi].mode); });
+  });
+}
+function blockFor(it, mode) {
+  var type, err;
+  if (it.sign) { type = "sign"; err = "sign"; }
+  else if (it.feel) { type = "observe"; err = "flow"; }
+  else if (it.f != null || !it.k) { type = "observe"; err = "swap"; }
+  else if (mode === "tr") { type = "temp"; err = "tempdir"; }
+  else if (it.k === "phys") { type = "physical"; err = "physical"; }
+  else { type = "classify"; err = "swap"; }
+  var from = it.f != null ? it.f : 25, to = it.to != null ? it.to : (it.a === "exo" ? from + rint(6, 14) : from - rint(4, 9));
+  return { it: it, mode: mode, lane: it.a === "exo" ? 0 : 2, type: type, err: err, from: from, to: to };
+}
+
+/* =================== STAGE 2 CONTENT (Pure Chemistry) =================== */
+var RUNS = [
+  { name: "THE METHANE BURNER", eq: "CH<span class=\"sub\">4</span> + 2O<span class=\"sub\">2</span> → CO<span class=\"sub\">2</span> + 2H<span class=\"sub\">2</span>O", L: "CH₄ + 2O₂", R: "CO₂ + 2H₂O", kind: "exo", yR: 270, yP: 140, yProd: 368, qs: ["ea", "dh", "sign"],
+    tip: "Collect energy to raise your energy line to the top of the hump." },
+  { name: "THE LIME KILN", eq: "CaCO<span class=\"sub\">3</span> → CaO + CO<span class=\"sub\">2</span>", L: "CaCO₃", R: "CaO + CO₂", kind: "endo", yR: 350, yP: 125, yProd: 225, shards: true, qs: ["ea", "dh", "sign"],
+    tip: "A big hump! Watch out for Dr. Freezeburn's ice. It drains your energy." },
+  { name: "THE BOND BREAKER", eq: "H<span class=\"sub\">2</span> + Cl<span class=\"sub\">2</span> → 2HCl", L: "H₂ + Cl₂", R: "2HCl", top: "H + H + Cl + Cl", kind: "exo", yR: 255, yP: 110, yProd: 362, shards: true, qs: ["break", "make", "sign"],
+    tip: "Going up the hump breaks the H–H and Cl–Cl bonds. Coming down makes H–Cl bonds." },
+  { name: "THE CATALYST CAVE", eq: "2H<span class=\"sub\">2</span>O<span class=\"sub\">2</span> → 2H<span class=\"sub\">2</span>O + O<span class=\"sub\">2</span> (catalyst: MnO<span class=\"sub\">2</span>)", L: "2H₂O₂", R: "2H₂O + O₂", kind: "exo", yR: 250, yP: 100, yPc: 190, yProd: 365, shards: true, cat: true, qs: ["eacat", "catwhat"],
+    tip: "This hump is huge. Grab the MnO₂ catalyst to find an easier route." }
+];
+var W2 = 440, H2 = 440, AX = 40, AY = 412, X1 = 160, XP = 245, X2 = 330;
+
+/* =================== BOSS QUESTIONS =================== */
+// each: { type, q, opts: [[text, true] or [text, errKey]], why, eq (optional HTML) } — or a function returning one
+function tableQ() {
+  var endo = Math.random() < .5, n = 4, rows = [], k = rint(0, 3);
+  for (var i = 0; i < n; i++) {
+    var s = rint(23, 29), d = (i === k) === endo ? -rint(3, 9) : rint(3, 12);
+    rows.push([String.fromCharCode(65 + i), s, s + d]);
+  }
+  var eq = "<table><tr><th>Experiment</th><th>Start (°C)</th><th>End (°C)</th></tr>" + rows.map(function (r) { return "<tr><td>" + r[0] + "</td><td>" + r[1].toFixed(1) + "</td><td>" + r[2].toFixed(1) + "</td></tr>"; }).join("") + "</table>";
+  return { type: "observe", eq: eq, q: "Four reactions were carried out. Which one is " + (endo ? "endothermic" : "exothermic") + "?",
+    opts: rows.map(function (r, i) { return ["Experiment " + r[0], i === k || "swap"]; }), why: endo ? "Only experiment " + rows[k][0] + " got colder, so it took in heat." : "Only experiment " + rows[k][0] + " got hotter, so it gave out heat." };
+}
+var BQ_EASY = [
+  { type: "classify", q: "Which of these is an exothermic reaction?", opts: [["Burning magnesium in air", true], ["Heating calcium carbonate until it breaks down", "swap"], ["Photosynthesis", "swap"], ["Dissolving ammonium nitrate in water", "swap"]], why: "Combustion gives out heat and light." },
+  { type: "classify", q: "Which of these is an endothermic process?", opts: [["Photosynthesis", true], ["Respiration", "swap"], ["Neutralisation", "swap"], ["Burning ethanol", "swap"]], why: "Photosynthesis takes in light energy." },
+  { type: "classify", q: "Which statement about an exothermic reaction is correct?", opts: [["Energy is transferred to the surroundings", true], ["Energy is taken in from the surroundings", "swap"], ["The temperature of the surroundings decreases", "tempdir"], ["Cold is given out to the surroundings", "flow"]], why: "Exothermic reactions transfer energy, often as heat, to the surroundings." },
+  { type: "classify", q: "Copper(II) carbonate only keeps breaking down while it is being heated. This shows the reaction is…", opts: [["endothermic", true], ["exothermic", "swap"], ["exothermic, because heat is involved", "swap"], ["neither, because it is a decomposition", "swap"]], why: "It needs a constant supply of heat, so it takes in energy." },
+  { type: "classify", q: "Respiration is ___ and photosynthesis is ___.", opts: [["exothermic, endothermic", true], ["endothermic, exothermic", "swap"], ["both exothermic", "swap"], ["both endothermic", "swap"]], why: "Respiration releases energy; photosynthesis takes in light energy." },
+  { type: "temp", q: "Dilute hydrochloric acid is added to sodium hydroxide solution. What happens to the temperature of the mixture?", opts: [["It rises, because heat is given out", true], ["It falls, because heat is taken in", "swap"], ["It rises, because heat is taken in", "flow"], ["It falls, because heat is given out", "tempdir"]], why: "Neutralisation is exothermic, so the mixture gets warmer." },
+  { type: "temp", q: "Ammonium nitrate is dissolved in water. What happens to the temperature of the solution?", opts: [["It falls, because heat is taken in from the surroundings", true], ["It rises, because heat is given out", "swap"], ["It falls, because heat is given out to the surroundings", "flow"], ["It stays the same, because dissolving is a physical change", "physical"]], why: "Dissolving ammonium nitrate is endothermic. Physical changes can be endothermic too." },
+  { type: "temp", q: "Which pair of substances would make the temperature of the reaction mixture fall?", opts: [["Citric acid and sodium hydrogencarbonate", true], ["Magnesium and hydrochloric acid", "swap"], ["Zinc and copper(II) sulfate solution", "swap"], ["Sodium hydroxide and nitric acid", "swap"]], why: "Citric acid and sodium hydrogencarbonate react endothermically." },
+  { type: "temp", q: "In an endothermic reaction, the temperature of the reaction mixture…", opts: [["decreases", true], ["increases", "tempdir"], ["stays the same", "tempdir"], ["increases, then decreases", "tempdir"]], why: "The reaction takes in heat from the mixture and its container, so they get colder." },
+  tableQ, tableQ,
+  { type: "observe", q: "During a reaction, the test tube feels cold. This is because…", opts: [["heat flows from your hand into the test tube", true], ["cold flows from the test tube into your hand", "flow"], ["the reaction gives out heat", "swap"], ["the reaction is exothermic", "swap"]], why: "Heat flows from hot to cold. The endothermic reaction is taking heat from your hand." },
+  function () { var a = rint(24, 28), b = a + rint(6, 12);
+    return { type: "observe", q: "A student mixes two solutions. The thermometer reading goes from " + a + ".0 °C to " + b + ".0 °C. The reaction is…", opts: [["exothermic, because heat is given out to the surroundings", true], ["endothermic, because heat is taken in", "swap"], ["exothermic, because heat is taken in", "flow"], ["endothermic, because the temperature rose", "swap"]], why: "A rise in temperature means heat was given out." }; },
+  { type: "physical", q: "Which change is exothermic?", opts: [["Steam condensing", true], ["Ice melting", "physical"], ["Water evaporating", "physical"], ["Wax melting", "physical"]], why: "Condensing gives out energy." },
+  { type: "physical", q: "Which change is endothermic?", opts: [["Ice melting", true], ["Water freezing", "physical"], ["Steam condensing", "physical"], ["Solid sodium hydroxide dissolving in water", "swap"]], why: "Melting takes in energy." },
+  { type: "physical", q: "Why does sweating cool you down?", opts: [["Evaporating sweat takes in heat from your skin", true], ["Evaporating sweat gives out heat", "physical"], ["Sweat gives cold to your skin", "flow"], ["Sweat condenses on your skin", "physical"]], why: "Evaporation is endothermic: it takes heat from your skin." },
+  { type: "apply", q: "An instant cold pack holds water and a solid that dissolves when the pack is squeezed. Which solid is suitable?", opts: [["Ammonium nitrate", true], ["Sodium hydroxide", "swap"], ["Calcium oxide", "swap"], ["Magnesium", "swap"]], why: "Dissolving ammonium nitrate is endothermic, so the pack gets cold." },
+  { type: "apply", q: "A self-heating can of coffee heats up when water is mixed with…", opts: [["calcium oxide", true], ["ammonium nitrate", "swap"], ["ammonium chloride", "swap"], ["ice", "physical"]], why: "Calcium oxide reacts with water exothermically." },
+  { type: "apply", q: "Hand warmers contain iron powder that rusts quickly. They work because rusting is…", opts: [["exothermic: it gives out heat", true], ["endothermic: it gives out heat", "swap"], ["endothermic: it takes in heat", "swap"], ["exothermic: it takes in heat", "flow"]], why: "Rusting is exothermic, so it gives out heat." }
+];
+// energy profile diagrams for boss questions. kind: exo | endo | cat. Returns { svg, L: letter for each arrow }
+function diagram(kind) {
+  var P = kind === "exo" ? { yR: 110, yP: 38, yProd: 160 } : kind === "endo" ? { yR: 152, yP: 32, yProd: 84 } : { yR: 104, yP: 26, yPc: 70, yProd: 160 };
+  var x1 = 92, xp = 150, x2 = 208, b = 182, a = 30;
+  function curve(peak) { var d = "M" + (a + 4) + " " + P.yR + " L" + x1 + " " + P.yR; for (var x = x1; x <= x2; x += 4) { var y = x < xp ? cosI(P.yR, peak, (x - x1) / (xp - x1)) : cosI(peak, P.yProd, (x - xp) / (x2 - xp)); d += " L" + x + " " + y.toFixed(1); } return d + " L300 " + P.yProd; }
+  var arrows = kind === "cat" ? [["eacat", xp, P.yR, P.yPc], ["ea", xp - 24, P.yR, P.yP], ["dh", 262, P.yR, P.yProd], ["rev", xp + 22, P.yProd, P.yPc]]
+    : [["ea", xp, P.yR, P.yP], ["rev", xp + 24, P.yProd, P.yP], ["dh", 262, P.yR, P.yProd], ["tot", 48, b, P.yP]];
+  var letters = shuffle(["A", "B", "C", "D"]), L = {};
+  var s = '<svg viewBox="0 0 320 196" role="img" aria-label="Energy profile diagram"><defs><marker id="ah' + kind + '" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#FCE883"/></marker></defs>';
+  s += '<path d="M' + a + ' 8 V' + b + ' H312" fill="none" stroke="#fff" stroke-width="2"/><text x="14" y="100" fill="#B8B2D6" font-size="11" transform="rotate(-90 14 100)" text-anchor="middle">energy</text><text x="200" y="194" fill="#B8B2D6" font-size="10" text-anchor="middle">progress of reaction</text>';
+  s += '<path d="M' + x1 + " " + P.yR + " H280" + '" stroke="#8C86A8" stroke-dasharray="4 4" fill="none"/>';
+  s += '<path d="M' + a + " " + P.yP + " H" + (xp + 30) + '" stroke="#8C86A8" stroke-dasharray="4 4" fill="none"/>';
+  if (kind === "cat") s += '<path d="' + curve(P.yP) + '" stroke="#2EF2E0" stroke-width="3" fill="none" opacity=".5" stroke-dasharray="6 5"/><path d="' + curve(P.yPc) + '" stroke="#FF7FB0" stroke-width="3" fill="none"/><text x="' + (xp + 4) + '" y="' + (P.yPc + 30) + '" fill="#FF7FB0" font-size="9">with catalyst</text>';
+  else s += '<path d="' + curve(P.yP) + '" stroke="#2EF2E0" stroke-width="3" fill="none"/>';
+  s += '<text x="' + (a + 8) + '" y="' + (P.yR - 6) + '" fill="#fff" font-size="10">reactants</text><text x="' + (x2 + 6) + '" y="' + (P.yProd - 6) + '" fill="#fff" font-size="10">products</text>';
+  arrows.forEach(function (ar, i) {
+    L[ar[0]] = letters[i];
+    s += '<line x1="' + ar[1] + '" y1="' + ar[2] + '" x2="' + ar[1] + '" y2="' + (ar[3] + (ar[3] < ar[2] ? 4 : -4)) + '" stroke="#FCE883" stroke-width="2.5" marker-end="url(#ah' + kind + ')"/>';
+    var my = (ar[2] + ar[3]) / 2;
+    s += '<rect x="' + (ar[1] + 4) + '" y="' + (my - 9) + '" width="16" height="16" rx="2" fill="#2A2448" stroke="#FCE883"/><text x="' + (ar[1] + 12) + '" y="' + (my + 3) + '" fill="#FCE883" font-size="11" font-weight="700" text-anchor="middle">' + letters[i] + "</text>";
+  });
+  return { svg: s + "</svg>", L: L };
+}
+function letterOpts(L, right, err) { return ["A", "B", "C", "D"].map(function (k) { return ["Arrow " + k, k === L[right] || err]; }); }
+var BQ_PURE = [
+  { type: "sign", q: "A reaction has ΔH = −286 kJ/mol. Which statement is correct?", opts: [["It is exothermic: the products have less energy than the reactants", true], ["It is endothermic: the products have more energy than the reactants", "sign"], ["It is exothermic: the products have more energy than the reactants", "sign"], ["It is endothermic: the products have less energy than the reactants", "sign"]], why: "Negative ΔH: energy is given out, so the products end up lower in energy." },
+  { type: "sign", q: "The thermal decomposition of calcium carbonate has ΔH = +178 kJ/mol. This means…", opts: [["energy is taken in and the surroundings get colder", true], ["energy is given out and the surroundings get hotter", "sign"], ["energy is taken in and the surroundings get hotter", "tempdir"], ["no energy change takes place", "sign"]], why: "Positive ΔH: endothermic, energy is taken in from the surroundings." },
+  { type: "sign", q: "Which of these reactions has a positive ΔH?", opts: [["Photosynthesis", true], ["Combustion of methane", "sign"], ["Neutralisation", "sign"], ["Respiration", "sign"]], why: "Photosynthesis is endothermic, so ΔH is positive." },
+  function () { var d = diagram("exo"); return { type: "profile", eq: d.svg, q: "Which arrow shows the enthalpy change, ΔH, for this reaction?", opts: letterOpts(d.L, "dh", "dharrow"), why: "ΔH runs from the reactants' level to the products' level (arrow " + d.L.dh + ")." }; },
+  function () { var d = diagram(pick(["exo", "endo"])); return { type: "profile", eq: d.svg, q: "Which arrow shows the activation energy, Ea?", opts: letterOpts(d.L, "ea", "eaarrow"), why: "Ea runs from the reactants up to the top of the hump (arrow " + d.L.ea + ")." }; },
+  function () { var d = diagram("endo"); return { type: "profile", eq: d.svg, q: "This energy profile diagram shows a reaction that is…", opts: [["endothermic, with a positive ΔH", true], ["exothermic, with a negative ΔH", "sign"], ["endothermic, with a negative ΔH", "sign"], ["exothermic, with a positive ΔH", "sign"]], why: "The products are higher than the reactants: energy was taken in, so ΔH is positive." }; },
+  { type: "profile", q: "On the energy profile diagram of an exothermic reaction, the products are…", opts: [["lower in energy than the reactants", true], ["higher in energy than the reactants", "sign"], ["at the same level as the reactants", "sign"], ["at the top of the hump", "eaarrow"]], why: "Energy is given out, so the products finish lower." },
+  { type: "profile", q: "What is activation energy?", opts: [["The minimum energy that colliding particles need for a reaction to happen", true], ["The energy given out by the reaction", "eaarrow"], ["The energy difference between the reactants and the products", "dharrow"], ["The total energy of the products", "eaarrow"]], why: "Ea is the energy barrier the particles must get over." },
+  { type: "bonds", q: "Which statement about bonds is correct?", opts: [["Bond breaking is endothermic and bond making is exothermic", true], ["Bond breaking is exothermic and bond making is endothermic", "bonds"], ["Both bond breaking and bond making are exothermic", "bonds"], ["Both bond breaking and bond making are endothermic", "bonds"]], why: "You must put energy in to pull atoms apart; energy is released when bonds form." },
+  { type: "bonds", q: "H₂ + Cl₂ → 2HCl is exothermic. Which statement explains this?", opts: [["More energy is given out making the H–Cl bonds than is taken in breaking the H–H and Cl–Cl bonds", true], ["More energy is taken in breaking the H–H and Cl–Cl bonds than is given out making the H–Cl bonds", "balance"], ["Making the H–Cl bonds takes in energy", "bonds"], ["No bonds are broken, only made", "bonds"]], why: "Exothermic overall: energy out (bond making) is bigger than energy in (bond breaking)." },
+  { type: "bonds", q: "A reaction is endothermic. This is because…", opts: [["more energy is taken in breaking bonds than is given out making bonds", true], ["more energy is given out making bonds than is taken in breaking bonds", "balance"], ["bond making takes in energy", "bonds"], ["no new bonds are made", "bonds"]], why: "Endothermic overall: energy in (bond breaking) is bigger than energy out (bond making)." },
+  { type: "bonds", q: "When methane burns (CH₄ + 2O₂ → CO₂ + 2H₂O), which bonds are broken?", opts: [["C–H and O=O", true], ["C=O and O–H", "bonds"], ["C–H only", "bonds"], ["O=O only", "bonds"]], why: "The reactants' bonds (C–H in methane, O=O in oxygen) break. C=O and O–H bonds are made." },
+  { type: "catalyst", q: "Adding a catalyst to a reaction…", opts: [["lowers Ea; ΔH stays the same", true], ["lowers Ea and makes ΔH more negative", "catalyst"], ["raises Ea; ΔH stays the same", "catalyst"], ["lowers ΔH; Ea stays the same", "catalyst"]], why: "A catalyst gives a lower-energy route. The reactants and products are the same, so ΔH is unchanged." },
+  function () { var d = diagram("cat"); return { type: "catalyst", eq: d.svg, q: "Which arrow shows the activation energy for the catalysed reaction?", opts: letterOpts(d.L, "eacat", "catalyst"), why: "The catalysed route has the lower hump. Its Ea runs from the reactants to the top of that lower hump (arrow " + d.L.eacat + ")." }; }
+];
+var BOSS_POOL = {
+  easy: { p1: BQ_EASY.slice(0, 9).concat(BQ_EASY.slice(13)), p2: BQ_EASY.slice(9) },
+  hard: { p1: BQ_EASY, p2: BQ_PURE }
+};
+
+/* =================== PIXEL SPRITES (used if an image file is missing) =================== */
+var HERO_MAP = [
+  "......kkkkk.....", ".....kHHHHHk....", "....kHHHHHHHk...", "....kHSSSSSHk...", "...kkkkSSkkkk...", "...kGGkSSkGGk...",
+  "....kkSSSSkk....", ".....kSmmSk.....", "....kWWkkWWk....", "...kWWWtWWWWk.kk", "..kWWkWtWWkWWkFk", "..kSkWWtWWWkSkFk",
+  "...kkWWtWWWWkkkk", "....kWWWWWWk....", "....kBBkkBBk....", "....kkk..kkk...."
+];
+var HERO_PAL = { k: "#1F2A2E", H: "#3B2A20", S: "#F4C9A8", G: "#2EF2E0", m: "#C0504D", W: "#FFFFFF", t: "#069494", F: "#FF8243", B: "#3A4FA0" };
+var BOSS_MAP = [
+  "....kkkkkkkk....", "...kFFFFIIIIk...", "..kFYFFFIIwIIk..", "..kFFkkkkkkIIk..", "..kkGGkSSkGGkk..", "...kGGkSSkGGk...",
+  "...kSSSSSSSSk...", "...kSkmmmmkSk...", "....kSSSSSSk....", "...kWWWkkWWWk...", "..kWWWWtWWWWWk..", ".kFkWWWtWWWWkIk.",
+  ".kFkWWWtWWWWkIk.", "..kkWWWtWWWWkk..", "...kWWWWWWWWk...", "...kFFk..kIIk..."
+];
+var BOSS_PAL = { k: "#1F2A2E", F: "#FF8243", Y: "#FCE883", I: "#9FE8F0", w: "#FFFFFF", G: "#FCE883", S: "#F4C9A8", m: "#5A2A3A", W: "#F4F8FA", t: "#069494" };
+var BOLT_MAP = ["...kk...", "..kYYk..", ".kYFFYk.", "kYFFFFYk", "kYFRRFYk", ".kFRRFk.", "..kFFk..", "...kk..."];
+var BOLT_PAL = { k: "#1F2A2E", Y: "#FCE883", F: "#FF8243", R: "#FF4D5E" };
+var HEART_MAP = [".kk.kk.", "kRRkRRk", "kRwRRRk", "kRRRRRk", ".kRRRk.", "..kRk..", "...k..."];
+var HEART_PAL = { k: "#0D0B1A", R: "#FF4D5E", w: "#FFFFFF" };
+var PIX = { hero: [HERO_MAP, HERO_PAL], heroHurt: [HERO_MAP, HERO_PAL], boss: [BOSS_MAP, BOSS_PAL], bossHurt: [BOSS_MAP, BOSS_PAL] };
+function pixelSVG(map, pal) {
+  var w = 0, r = "";
+  map.forEach(function (row, y) { w = Math.max(w, row.length); for (var x = 0; x < row.length; x++) { var c = pal[row[x]]; if (c) r += '<rect x="' + x + '" y="' + y + '" width="1.02" height="1.02" fill="' + c + '"/>'; } });
+  return '<svg viewBox="0 0 ' + w + " " + map.length + '" shape-rendering="crispEdges" aria-hidden="true">' + r + "</svg>";
+}
+function pixelCanvas(map, pal) {
+  var c = document.createElement("canvas"), w = 0; map.forEach(function (r) { w = Math.max(w, r.length); });
+  c.width = w; c.height = map.length; var x = c.getContext("2d");
+  map.forEach(function (row, y) { for (var i = 0; i < row.length; i++) { var col = pal[row[i]]; if (col) { x.fillStyle = col; x.fillRect(i, y, 1, 1); } } });
+  return c;
+}
+var SP = {};
+Object.keys(IMG).forEach(function (k) {
+  var px = pixelCanvas(PIX[k][0], PIX[k][1]);
+  SP[k] = { el: px, ok: false, pixel: true, w: px.width, h: px.height };
+  var im = new Image();
+  im.onload = function () { SP[k] = { el: im, ok: true, pixel: false, w: im.naturalWidth, h: im.naturalHeight }; if (k === "hero" || k === "boss") paintBossSprites(); };
+  im.src = IMG[k];
+});
+function domArt(k) { return SP[k] && SP[k].ok ? '<img src="' + esc(IMG[k]) + '" alt="">' : pixelSVG(PIX[k][0], PIX[k][1]); }
+function heartsHTML(n, max, breakIdx) { var h = ""; for (var i = 0; i < max; i++) h += '<span class="' + (i >= n ? "lost" : "") + (i === breakIdx ? " breaking" : "") + '">' + pixelSVG(HEART_MAP, HEART_PAL) + "</span>"; return h; }
+
+/* =================== SOUND =================== */
+var Sound = {
+  on: load("sound", true), ctx: null,
+  tone: function (f, type, dur, vol, delay, f2) {
+    if (!this.on) return;
+    try {
+      this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (this.ctx.state === "suspended") this.ctx.resume();
+      var c = this.ctx, t = c.currentTime + (delay || 0), o = c.createOscillator(), g = c.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + .02);
+    } catch (e) {}
+  },
+  tap: function () { this.tone(660, "square", .05, .04); },
+  move: function () { this.tone(440, "square", .04, .03); },
+  jump: function () { this.tone(300, "square", .16, .05, 0, 700); },
+  ok: function () { this.tone(660, "square", .09, .06); this.tone(990, "square", .14, .06, .08); },
+  bad: function () { this.tone(180, "square", .2, .07); },
+  smash: function () { this.tone(900, "sawtooth", .08, .06, 0, 200); this.tone(120, "square", .35, .07, .08, 60); },
+  orb: function () { this.tone(1046, "square", .06, .04); this.tone(1568, "square", .08, .04, .05); },
+  clear: function () { [784, 988, 1175, 1568].forEach(function (n, i) { Sound.tone(n, "square", .08, .05, i * .06); }); },
+  freeze: function () { this.tone(1400, "triangle", .3, .05, 0, 400); },
+  slide: function () { this.tone(200, "triangle", .25, .05, 0, 120); },
+  hit: function () { [880, 660, 990].forEach(function (n, i) { Sound.tone(n, "square", .07, .07, i * .05); }); },
+  hurt: function () { this.tone(140, "sawtooth", .3, .08); this.tone(90, "square", .3, .06, .1); },
+  level: function () { [523, 659, 784, 1047].forEach(function (n, i) { Sound.tone(n, "square", .12, .06, i * .1); }); },
+  win: function () { [523, 659, 784, 1047, 784, 1047].forEach(function (n, i) { Sound.tone(n, "square", .14, .06, i * .12); }); },
+  lose: function () { [392, 330, 262, 196].forEach(function (n, i) { Sound.tone(n, "square", .22, .06, i * .2); }); }
+};
+var Music = {
+  on: load("music", true), cur: null, want: null,
+  el: function (n) { return $("mus-" + n); },
+  play: function (n) {
+    this.want = n;
+    var self = this; ["menu", "stage", "boss"].forEach(function (m) { if (m !== n) { var e = self.el(m); clearInterval(e._f); try { e.pause(); e.currentTime = 0; } catch (x) {} } });
+    if (!this.on || !n) { this.cur = null; return; }
+    var e = this.el(n); clearInterval(e._f);
+    if (this.cur === n && !e.paused) return;
+    this.cur = n;
+    try { e.volume = MUSIC_VOLUME; var p = e.play(); if (p && p.catch) p.catch(function () { self.cur = null; }); } catch (x) {}
+  },
+  stop: function () { this.play(null); },
+  fadeOut: function () { var n = this.cur; if (!n) return; var e = this.el(n), v = e.volume, self = this; clearInterval(e._f); e._f = setInterval(function () { v -= .03; if (v <= 0) { clearInterval(e._f); try { e.pause(); e.currentTime = 0; } catch (x) {} self.cur = null; } else e.volume = v; }, 60); }
+};
+function paintSound() {
+  $("btn-sound").classList.toggle("off", !Sound.on); $("btn-sound").setAttribute("aria-label", Sound.on ? "Sound effects on" : "Sound effects off");
+  $("btn-music").classList.toggle("off", !Music.on); $("btn-music").setAttribute("aria-label", Music.on ? "Music on" : "Music off");
+}
+$("btn-sound").addEventListener("click", function () { Sound.on = !Sound.on; store("sound", Sound.on); paintSound(); });
+$("btn-music").addEventListener("click", function () { Music.on = !Music.on; store("music", Music.on); paintSound(); var w = Music.want; Music.cur = null; Music.play(Music.on ? w : null); Music.want = w; });
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) { clearKeys(); if (Music.cur) Music.el(Music.cur).pause(); } else if (Music.cur && Music.on) { try { Music.el(Music.cur).play().catch(function () {}); } catch (e) {} }
+});
+document.addEventListener("pointerdown", function first() { document.removeEventListener("pointerdown", first, true); if (!Music.cur && Music.want) { var w = Music.want; Music.play(w); } }, true);
+paintSound();
+
+if (navigator.maxTouchPoints > 0 || "ontouchstart" in window) document.body.classList.add("touch");
+
+/* =================== SCREENS =================== */
+function show(id) {
+  ["scr-start", "scr-play", "scr-boss", "scr-bend", "scr-result"].forEach(function (s) { $(s).hidden = s !== id; });
+  var dark = id === "scr-play" || id === "scr-boss" || id === "scr-bend";
+  document.body.classList.toggle("dark", dark);
+  document.body.classList.toggle("playing", id === "scr-play");
+  $("btn-quit").hidden = id === "scr-start";
+  if (id === "scr-start" || id === "scr-result") Music.play("menu");
+  else if (id === "scr-play") Music.play("stage");
+  else if (id === "scr-boss") Music.play("boss");
+  window.scrollTo(0, 0);
+}
+
+/* =================== START SCREEN =================== */
+var G = { lv: "easy" };
+(function setup() {
+  var sel = $("in-cls");
+  CLASSES.forEach(function (c) { var o = document.createElement("option"); o.textContent = c; sel.appendChild(o); });
+  var st = load("student", null);
+  if (st) { $("in-name").value = st.name || ""; sel.value = st.cls || ""; $("in-reg").value = st.reg || ""; }
+  G.lv = load("lv", "easy");
+  paintStart();
+  Music.want = "menu";
+})();
+function paintStart() {
+  document.querySelectorAll("#seg-lv .chip").forEach(function (c) { c.setAttribute("aria-pressed", c.dataset.lv === G.lv ? "true" : "false"); });
+  var b = load("best", {})[G.lv];
+  $("txt-best").textContent = b != null ? b + " points" : "–";
+}
+$("seg-lv").addEventListener("click", function (e) { var c = e.target.closest(".chip"); if (!c) return; G.lv = c.dataset.lv; store("lv", G.lv); Sound.tap(); paintStart(); });
+function readStudent() {
+  var name = $("in-name").value.trim(), cls = $("in-cls").value, reg = $("in-reg").value.trim();
+  if (!name) return err("Type your name."), null;
+  if (!cls) return err("Choose your class."), null;
+  if (!(cls === "Visitor" || /^\d{1,2}$/.test(reg))) return err("Type your register number (1–2 digits)."), null;
+  err("");
+  var s = { name: name, cls: cls, reg: reg }; store("student", s); return s;
+  function err(m) { $("form-err").textContent = m; }
+}
+$("btn-go").addEventListener("click", function () {
+  var s = readStudent(); if (!s) return;
+  Sound.tone(1, "sine", .01, .0001);
+  newSession(s);
+  if (location.hash === "#boss") startBoss();
+  else if (location.hash === "#hill") startHill();
+  else startBlocks();
+});
+$("btn-quit").addEventListener("click", function () { stopLoop(); stopBossTimer(); Confetti.stop(); $("c-cover").hidden = true; show("scr-start"); paintStart(); });
+$("form-start").addEventListener("submit", function (e) { e.preventDefault(); });
+
+function newSession(student) {
+  G.student = student; G.points = 0; G.t0 = Date.now(); G.log = []; G.attempt = 0;
+  G.s1 = { right: 0, total: 0, clears: 0 }; G.s2 = { right: 0, total: 0, slides: 0, frozen: 0 };
+  B = null;
+}
+function logAnswer(phase, type, ok, err, text, picked, right) {
+  G.log.push({ phase: phase, type: type, ok: ok, err: err, text: text, picked: picked, right: right, attempt: G.attempt });
+}
+function addPoints(n) { G.points += n; $("c-pts").textContent = G.points; }
+
+/* =================== SHARED CANVAS =================== */
+var W = 400, H = 560, cv = $("cv"), ctx = cv.getContext("2d"), SCALE = 1, raf2 = 0, lastT = 0, MODE = null;
+var K = { l: false, r: false, d: false, j: false, jq: false };
+function clearKeys() { K.l = K.r = K.d = K.j = K.jq = false; document.querySelectorAll("#pad button.on").forEach(function (b) { b.classList.remove("on"); }); }
+function startLoop() { stopLoop(); lastT = performance.now(); raf2 = requestAnimationFrame(loop); }
+function stopLoop() { cancelAnimationFrame(raf2); raf2 = 0; }
+function loop(t) {
+  var dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
+  if (!document.hidden) { if (MODE === "blocks") updBlocks(dt); else if (MODE === "hill") updHill(dt); }
+  if (toastT > 0) { toastT -= dt; if (toastT <= 0) $("c-toast").hidden = true; }
+  if (MODE === "blocks") drawBlocks(); else if (MODE === "hill") drawHill();
+  raf2 = requestAnimationFrame(loop);
+}
+var toastT = 0;
+function toast(html, bad, secs) { var t = $("c-toast"); t.innerHTML = html; t.className = "toast" + (bad ? " bad" : "") + " low"; t.hidden = false; toastT = secs || (bad ? 4 : 2.6); }
+function hideToast() { $("c-toast").hidden = true; toastT = 0; }
+function fit() {
+  if ($("scr-play").hidden) return;
+  var wrap = $("c-wrap").parentNode, cs = getComputedStyle(document.querySelector(".wrap"));
+  var side = getComputedStyle(wrap).display === "grid", padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  if (side) {
+    var aH = window.innerHeight - document.querySelector(".topbar").offsetHeight - padV - 12, aW = wrap.clientWidth - $("c-q").offsetWidth - 26;
+    return sizeCanvas(Math.max(0.45, Math.min(aW / W, aH / H, 2.4)));
+  }
+  var tb = document.querySelector(".topbar");
+  var others = (getComputedStyle(tb).position === "fixed" ? 0 : tb.offsetHeight) + $("c-hud").offsetHeight + $("c-q").offsetHeight +
+    ($("pad").offsetParent ? $("pad").offsetHeight : 0) + ($("c-choices").offsetParent ? $("c-choices").offsetHeight : 0) +
+    ($("keys").offsetParent ? $("keys").offsetHeight : 0) + padV + 8 * 4 + 6;
+  var availH = window.innerHeight - others, availW = wrap.clientWidth - 6;
+  sizeCanvas(Math.max(0.4, Math.min(availW / W, availH / H, 1.5)));
+}
+function sizeCanvas(sc) {
+  SCALE = sc;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  cv.style.width = Math.round(W * SCALE) + "px"; cv.style.height = Math.round(H * SCALE) + "px";
+  cv.width = Math.round(W * SCALE * dpr); cv.height = Math.round(H * SCALE * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+}
+window.addEventListener("resize", function () { fit(); });
+function setPad(kind) {
+  var p = $("pad");
+  if (kind === "blocks") {
+    p.className = "pad three";
+    p.innerHTML = '<button type="button" data-k="l" aria-label="Move left">◀</button><button type="button" data-k="d" class="drop" aria-label="Drop">▼ DROP</button><button type="button" data-k="r" aria-label="Move right">▶</button>';
+    $("keys").innerHTML = "<kbd>←</kbd> <kbd>→</kbd> steer · <kbd>↓</kbd> drop";
+  } else {
+    p.className = "pad three";
+    p.innerHTML = '<button type="button" data-k="l" aria-label="Left">◀</button><button type="button" data-k="j" class="jump" aria-label="Jump">JUMP</button><button type="button" data-k="r" aria-label="Right">▶</button>';
+    $("keys").innerHTML = "<kbd>←</kbd> <kbd>→</kbd> move · <kbd>SPACE</kbd> jump";
+  }
+}
+function showControls(which) { // "pad" or "choices"
+  $("pad").hidden = which !== "pad"; $("keys").hidden = which !== "pad";
+  $("c-choices").hidden = which !== "choices";
+  fit();
+}
+function cover(html) {
+  var c = $("c-cover"); c.innerHTML = html; c.hidden = false; clearKeys();
+  setTimeout(function () { var b = c.querySelector("button"); if (b) b.focus(); }, 50);
+}
+function uncover() { $("c-cover").hidden = true; }
+$("c-cover").addEventListener("click", function (e) { var b = e.target.closest("button[data-go]"); if (!b) return; Sound.tap(); uncover(); var f = COVER_ACT[b.dataset.go]; if (f) f(); });
+var COVER_ACT = {};
+
+// input: keyboard
+var KEYMAP = { ArrowLeft: "l", a: "l", A: "l", ArrowRight: "r", d: "r", D: "r", ArrowDown: "d", s: "d", S: "d", " ": "j", Spacebar: "j", ArrowUp: "j", w: "j", W: "j" };
+document.addEventListener("keydown", function (e) {
+  if (!$("scr-boss").hidden) return bossKey(e);
+  if ($("scr-play").hidden) return;
+  if (!$("c-cover").hidden) return; // let Enter/Space press the cover button
+  if (!$("c-choices").hidden) {
+    var n = { 1: 0, 2: 1, 3: 2, 4: 3, a: 0, b: 1, c: 2, d: 3, A: 0, B: 1, C: 2, D: 3 }[e.key];
+    if (n != null) { var bt = $("c-choices").querySelectorAll(".qopt")[n]; if (bt && !bt.disabled) { bt.click(); e.preventDefault(); } }
+    return;
+  }
+  if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  var k = KEYMAP[e.key]; if (!k) return;
+  e.preventDefault();
+  press(k, !e.repeat);
+});
+document.addEventListener("keyup", function (e) { var k = KEYMAP[e.key]; if (k) release(k); });
+window.addEventListener("blur", clearKeys);
+function press(k, fresh) {
+  if (MODE === "blocks") { if (k === "l" && fresh) laneMove(-1); else if (k === "r" && fresh) laneMove(1); else if (k === "d") K.d = true; }
+  else { if (k === "j") { if (fresh) K.jq = true; } else K[k] = true; }
+}
+function release(k) { if (k !== "j") K[k] = false; }
+(function pad() {
+  var held = {};
+  function down(e) {
+    var b = e.target.closest("button[data-k]"); if (!b) return;
+    e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (x) {}
+    held[e.pointerId] = b; b.classList.add("on"); press(b.dataset.k, true);
+  }
+  function up(e) {
+    var b = held[e.pointerId]; if (!b) return; delete held[e.pointerId];
+    b.classList.remove("on"); var k = b.dataset.k;
+    var still = Object.keys(held).some(function (id) { return held[id].dataset.k === k; });
+    if (!still) release(k);
+  }
+  var p = $("pad");
+  p.addEventListener("pointerdown", down); p.addEventListener("pointerup", up); p.addEventListener("pointercancel", up); p.addEventListener("lostpointercapture", up);
+  p.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+})();
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function wrapText(txt, maxW) {
+  var words = txt.split(" "), lines = [], cur = "";
+  words.forEach(function (w) { var t = cur ? cur + " " + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; });
+  if (cur) lines.push(cur); return lines;
+}
+function drawSprite(k, cx, footY, h, flip) {
+  var s = SP[k]; if (!s) return; var w = h * s.w / s.h;
+  ctx.save(); ctx.imageSmoothingEnabled = !s.pixel; ctx.translate(cx, footY); if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(s.el, -w / 2, -h, w, h); ctx.restore();
+}
+function thermometer(x, top, bot, val, lo, hi, label) {
+  // glass
+  ctx.fillStyle = "#19152E"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 3;
+  rr(x - 9, top, 18, bot - top, 9); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, bot + 6, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  var f = Math.max(0, Math.min(1, (val - lo) / (hi - lo))), lvl = bot - 6 - f * (bot - top - 14);
+  var col = val >= 25.05 ? "#FF8243" : val <= 24.95 ? "#2EF2E0" : "#FF4D5E";
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, bot + 6, 11, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(x - 4, lvl, 8, bot + 6 - lvl);
+  ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = 1.5;
+  for (var i = 0; i <= 6; i++) { var yy = bot - 6 - i * (bot - top - 14) / 6; ctx.beginPath(); ctx.moveTo(x + 9, yy); ctx.lineTo(x + 14, yy); ctx.stroke(); }
+  if (label) { ctx.fillStyle = "#fff"; ctx.font = "8px 'Press Start 2P', monospace"; ctx.textAlign = "center"; ctx.fillText(label, x, top - 10); }
+}
+
+/* =================== STAGE 1: THERMO BLOCKS =================== */
+var S1 = null, LANES = [95, 200, 305], BW = 150, BH = 58, WELL_TOP = 392, FLOOR = 548, ROWH = 22;
+function startBlocks() {
+  G.attempt = 0;
+  S1 = { waves: buildWaves(), wi: 0, i: 0, b: null, stacks: [0, 0], bricks: [[], []], therm: { v: 25, to: 25, hold: 0 }, parts: [], flash: 0, state: "intro", next: 0 };
+  W = 400; H = 560; MODE = "blocks";
+  show("scr-play"); setPad("blocks"); showControls("pad"); hideToast();
+  paintS1Hud(); paintS1Q();
+  startLoop(); fit();
+  cover('<span class="lvname">STAGE 1 OF ' + (G.lv === "hard" ? 3 : 2) + '</span><h2>THERMO BLOCKS</h2>' +
+    "<p>Dr. Freezeburn has mixed up the lab's reactions. Sort them before they land!</p>" +
+    '<div class="tut"><span class="h">◀ HOT well<br>exothermic: gives out heat</span><span class="c">COLD well ▶<br>endothermic: takes in heat</span></div>' +
+    "<ul><li>Read the reaction at the top. Steer the block with ◀ ▶.</li><li>Press ▼ to drop it fast once you've decided. Faster drops score more.</li><li>Don't let it land in the middle! It jams on the thermometer.</li><li>Stack 4 right blocks in one well to clear a line for bonus points.</li></ul>" +
+    '<button class="pbtn" type="button" data-go="wave">START ▶</button>');
+}
+COVER_ACT.wave = function () { S1.state = "play"; S1.next = 0.4; S1.b = null; paintS1Hud(); paintS1Q(); };
+function paintS1Hud() { $("c-lv").innerHTML = "STAGE 1 · THERMO BLOCKS<span>WAVE " + (S1.wi + 1) + "/4 · " + WAVES[S1.wi].name + "</span>"; $("c-pts").textContent = G.points; }
+function curBlock() { return S1.waves[S1.wi][S1.i]; }
+function paintS1Q() {
+  var w = WAVES[S1.wi], bl = S1.b ? S1.b.d : curBlock();
+  $("c-q").innerHTML = '<p class="qhead">WAVE ' + (S1.wi + 1) + " · " + w.name + " · BLOCK " + (S1.i + 1) + "/" + S1.waves[S1.wi].length + "</p>" +
+    '<p class="qtext">' + (S1.b ? esc(bl.it.t).replace(/([A-Za-z\)])(\d+)/g, '$1<span class="sub">$2</span>') : "Get ready…") + "</p>" +
+    '<p class="qhint">' + w.tip + "</p>";
+}
+function spawnBlock() {
+  var d = curBlock();
+  S1.b = { d: d, lane: 1, x: LANES[1], y: -BH, t: 0 };
+  paintS1Q();
+}
+function laneMove(dir) {
+  if (MODE !== "blocks" || !S1 || S1.state !== "play" || !S1.b || S1.b.landed) return;
+  if (S1.b.y + BH > WELL_TOP - 2) return; // already inside a well
+  var l = Math.max(0, Math.min(2, S1.b.lane + dir)); if (l !== S1.b.lane) { S1.b.lane = l; Sound.move(); }
+}
+function landBottom(lane) { return lane === 1 ? 300 : FLOOR - S1.stacks[lane / 2] * ROWH; }
+function updBlocks(dt) {
+  var th = S1.therm; th.v += (th.to - th.v) * Math.min(1, dt * 3);
+  if (th.hold > 0) { th.hold -= dt; if (th.hold <= 0) th.to = 25; }
+  S1.parts = S1.parts.filter(function (p) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt; return p.t < 1; });
+  if (S1.flash > 0) S1.flash -= dt;
+  if (S1.state !== "play") return;
+  if (!S1.b) { S1.next -= dt; if (S1.next <= 0) spawnBlock(); return; }
+  var b = S1.b; if (b.landed) return;
+  b.t += dt;
+  b.x += (LANES[b.lane] - b.x) * Math.min(1, dt * 14);
+  var sp = FALL_SPEED[S1.wi] * (K.d ? 7 : 1);
+  b.y += sp * dt;
+  var lb = landBottom(b.lane);
+  // a block on its way into a well can't pass through the well walls: snap the lane once it is below the well top
+  if (b.y + BH >= lb) { b.y = lb - BH; b.x = LANES[b.lane]; land(); }
+}
+function land() {
+  var b = S1.b, d = b.d; b.landed = true; K.d = false;
+  var lane = b.lane, ok = lane === d.lane, word = d.mode === "tr" ? (d.it.a === "exo" ? "TEMP RISES" : "TEMP FALLS") : (d.it.a === "exo" ? "EXOTHERMIC" : "ENDOTHERMIC");
+  G.s1.total++;
+  var picked = lane === 1 ? "(jammed in the middle)" : d.mode === "tr" ? (lane === 0 ? "temperature rises" : "temperature falls") : (lane === 0 ? "exothermic" : "endothermic");
+  var right = d.mode === "tr" ? (d.it.a === "exo" ? "temperature rises" : "temperature falls") : (d.it.a === "exo" ? "exothermic" : "endothermic");
+  logAnswer("s1", d.type, ok, ok ? null : (lane === 1 ? "jam" : d.err), d.it.t, picked, right);
+  S1.therm.to = d.to; S1.therm.from = d.from; S1.therm.hold = 2.4; S1.therm.v = d.from;
+  var showT = !d.it.sign && (d.it.lab || d.it.f != null);
+  var tline = showT ? " <b>" + t1(d.from) + " °C → " + t1(d.to) + " °C</b>" : "";
+  if (ok) {
+    G.s1.right++;
+    var bonus = Math.round(60 * Math.max(0, 1 - b.t / ((WELL_TOP + BH) / FALL_SPEED[S1.wi])));
+    addPoints(100 + bonus); Sound.ok();
+    var w = lane / 2; S1.stacks[w]++; S1.bricks[w].push(d.it.s);
+    b.color = d.it.a === "exo" ? "#FF8243" : "#2EF2E0";
+    toast("<b>✓ " + word + "!</b> " + esc(d.it.why) + tline, false, 2.8);
+    var after = function () {
+      if (S1.stacks[w] >= 4) { S1.stacks[w] = 0; S1.bricks[w] = []; S1.flash = .6; G.s1.clears++; addPoints(150); Sound.clear(); toast("<b>LINE CLEAR! +150</b>", false, 1.6); }
+      nextBlock(0.5);
+    };
+    S1.b.fade = 1; setTimeout(function () { S1.b = null; after(); }, 900);
+  } else {
+    Sound.smash(); burst(b.x, b.y + BH / 2);
+    S1.b = null; S1.state = "wrong";
+    var head = lane === 1 ? "JAMMED!" : "OOPS!";
+    var lead = lane === 1 ? "You didn't steer it into a well." : "That one goes in the other well.";
+    setTimeout(function () {
+      cover('<h2 class="red">' + head + '</h2><p class="big-eq">' + esc(d.it.t) + '</p><p>' + lead + ' It is <b class="ok-t">' + word.toLowerCase() + "</b>.</p>" +
+        '<p class="why">' + esc(d.it.why) + (showT ? " Temperature: " + t1(d.from) + " °C → " + t1(d.to) + " °C." : "") + "</p>" +
+        '<button class="pbtn" type="button" data-go="resume">GOT IT ▶</button>');
+    }, 650);
+  }
+}
+COVER_ACT.resume = function () { S1.state = "play"; nextBlock(0.3); };
+function burst(x, y) { for (var i = 0; i < 18; i++) S1.parts.push({ x: x + (Math.random() - .5) * BW, y: y, vx: (Math.random() - .5) * 260, vy: -Math.random() * 260, t: 0, c: pick(["#FCE883", "#FF4D5E", "#fff"]) }); }
+function nextBlock(delay) {
+  S1.i++;
+  if (S1.i >= S1.waves[S1.wi].length) {
+    S1.wi++; S1.i = 0; S1.b = null;
+    if (S1.wi >= S1.waves.length) return endBlocks();
+    S1.state = "between"; Sound.level(); paintS1Hud(); paintS1Q();
+    var w = WAVES[S1.wi];
+    cover('<span class="lvname">WAVE ' + (S1.wi + 1) + ' OF 4</span><h2>' + w.name + "</h2><p>" + w.tip + "</p>" +
+      (w.mode === "tr" ? '<div class="tut"><span class="h">◀ TEMP RISES ↑</span><span class="c">TEMP FALLS ↓ ▶</span></div>' : '<div class="tut"><span class="h">◀ EXOTHERMIC</span><span class="c">ENDOTHERMIC ▶</span></div>') +
+      '<button class="pbtn" type="button" data-go="wave">GO ▶</button>');
+    return;
+  }
+  S1.b = null; S1.next = delay; paintS1Q();
+}
+function endBlocks() {
+  S1.state = "done"; Sound.level();
+  var pure = G.lv === "hard";
+  cover('<span class="lvname">STAGE 1 COMPLETE</span><h2>THERMOMETERS FIXED!</h2><p>You sorted <b>' + G.s1.right + " of " + G.s1.total + "</b> blocks correctly" + (G.s1.clears ? " and cleared " + G.s1.clears + " line" + (G.s1.clears > 1 ? "s" : "") : "") + ".</p>" +
+    (pure ? "<p>Dr. Freezeburn retreats into the Energy Hills. Time to climb some energy profiles!</p>" : "<p>Dr. Freezeburn is furious. He's coming for you!</p>") +
+    (SP.boss.ok && !pure ? '<img src="' + IMG.boss + '" alt="">' : "") +
+    '<button class="pbtn" type="button" data-go="' + (pure ? "hill" : "boss") + '">' + (pure ? "STAGE 2 ▶" : "BOSS FIGHT ▶") + "</button>");
+}
+COVER_ACT.hill = function () { startHill(); };
+COVER_ACT.boss = function () { startBoss(); };
+
+function drawBlocks() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#0D0B1A"; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(46,242,224,.08)"; ctx.lineWidth = 1;
+  for (var gx = 0; gx <= W; gx += 20) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+  for (var gy = 0; gy <= H; gy += 20) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+  var mode = WAVES[Math.min(S1.wi, 3)].mode;
+  // lane guides
+  if (S1.b && !S1.b.landed) { ctx.fillStyle = "rgba(252,232,131,.06)"; ctx.fillRect(LANES[S1.b.lane] - BW / 2, 0, BW, WELL_TOP); }
+  // wells
+  [0, 1].forEach(function (w) {
+    var x0 = w === 0 ? 10 : 225, x1 = w === 0 ? 175 : 390, hot = w === 0, col = hot ? "#FF8243" : "#2EF2E0";
+    var g = ctx.createLinearGradient(0, WELL_TOP, 0, FLOOR); g.addColorStop(0, hot ? "rgba(255,130,67,.05)" : "rgba(46,242,224,.05)"); g.addColorStop(1, hot ? "rgba(255,130,67,.28)" : "rgba(46,242,224,.28)");
+    ctx.fillStyle = g; ctx.fillRect(x0, WELL_TOP, x1 - x0, FLOOR - WELL_TOP);
+    ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0, WELL_TOP); ctx.lineTo(x0, FLOOR + 2); ctx.lineTo(x1, FLOOR + 2); ctx.lineTo(x1, WELL_TOP); ctx.stroke();
+    // bricks
+    S1.bricks[w].forEach(function (s, i) {
+      var y = FLOOR - (i + 1) * ROWH; ctx.fillStyle = col; rr(x0 + 6, y + 2, x1 - x0 - 12, ROWH - 4, 4); ctx.fill();
+      ctx.fillStyle = "#0D0B1A"; ctx.font = "bold 11px 'Open Sans', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(fxt(s), (x0 + x1) / 2, y + ROWH / 2 + 1);
+    });
+    if (S1.flash > 0 && Math.floor(S1.flash * 10) % 2 === 0) { ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillRect(x0, WELL_TOP, x1 - x0, FLOOR - WELL_TOP); }
+    // label
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = col; ctx.font = "9px 'Press Start 2P', monospace";
+    var t = mode === "tr" ? (hot ? "TEMP RISES ↑" : "TEMP FALLS ↓") : (hot ? "EXOTHERMIC" : "ENDOTHERMIC");
+    ctx.fillText(t, (x0 + x1) / 2, WELL_TOP + 20);
+    ctx.font = "600 11px 'Open Sans', sans-serif"; ctx.fillStyle = "rgba(255,255,255,.75)";
+    ctx.fillText(mode === "tr" ? (hot ? "mixture gets hotter" : "mixture gets colder") : (hot ? "gives out heat" : "takes in heat"), (x0 + x1) / 2, WELL_TOP + 38);
+    // flame / snowflake icon
+    ctx.font = "22px sans-serif"; ctx.fillText(hot ? "🔥" : "❄️", (x0 + x1) / 2, WELL_TOP + 70);
+  });
+  // thermometer in the middle
+  var th = S1.therm;
+  thermometer(200, 320, 520, th.v, 10, 40, "");
+  ctx.fillStyle = "#fff"; ctx.font = "8px 'Press Start 2P', monospace"; ctx.textAlign = "center";
+  ctx.fillText(t1(th.v) + "°C", 200, 312);
+  // falling block
+  if (S1.b) {
+    var b = S1.b, x = b.x - BW / 2, y = b.y;
+    ctx.save(); if (b.fade) ctx.globalAlpha = .9;
+    ctx.fillStyle = b.color || "#FCE883"; ctx.strokeStyle = "#1F2A2E"; ctx.lineWidth = 3;
+    rr(x, y, BW, BH, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.fillRect(x + 6, y + 5, BW - 12, 3);
+    ctx.fillStyle = "#1F2A2E"; ctx.font = "800 14px 'Open Sans', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    var lines = wrapText(fxt(b.d.it.s), BW - 16);
+    lines.slice(0, 2).forEach(function (l, i) { ctx.fillText(l, b.x, y + BH / 2 + (i - (Math.min(lines.length, 2) - 1) / 2) * 17); });
+    ctx.restore();
+    // drop shadow guide
+    if (!b.landed) { var lb = landBottom(b.lane); ctx.strokeStyle = "rgba(252,232,131,.35)"; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeRect(LANES[b.lane] - BW / 2, lb - BH, BW, BH); ctx.setLineDash([]); }
+  }
+  S1.parts.forEach(function (p) { ctx.fillStyle = p.c; ctx.globalAlpha = 1 - p.t; ctx.fillRect(p.x, p.y, 6, 6); ctx.globalAlpha = 1; });
+  ctx.textBaseline = "alphabetic";
+}
+
+/* =================== STAGE 2: ENERGY HILL =================== */
+var S2 = null, ORB_SPOTS = [[85, 14], [108, 80], [130, 14], [150, 80], [66, 80]];
+function startHill() {
+  G.attempt = 0;
+  S2 = { ri: 0 };
+  W = W2; H = H2; MODE = "hill";
+  show("scr-play"); setPad("hill"); showControls("pad"); hideToast();
+  startLoop(); buildRun(); fit();
+  cover('<span class="lvname">STAGE 2 OF 3</span><h2>ENERGY HILL</h2>' +
+    "<p>Every reaction is a hill on an energy profile diagram. To turn reactants into products, you need enough energy to get over the hump: the <b>activation energy, E<span class=\"sub\">a</span></b>.</p>" +
+    "<ul><li>Collect ⚡ energy to raise your yellow energy line.</li><li>When your line reaches the top of the hump, run over it!</li><li>Then label the diagram you just ran across.</li></ul>" +
+    '<button class="pbtn" type="button" data-go="run">START ▶</button>');
+}
+function buildRun() {
+  var R = RUNS[S2.ri];
+  S2.R = R; S2.cat = false; S2.peak = R.yP; S2.peakTo = R.yP;
+  S2.val = (R.yR - R.yP) / 5; S2.E = 0;
+  S2.hero = { x: 56, y: R.yR, vy: 0, on: true, face: 1 };
+  S2.orbs = ORB_SPOTS.map(function (s) { return { x: s[0], y: R.yR - s[1], got: false, t: 0 }; });
+  S2.catItem = R.cat ? { x: 118, y: R.yR - 14, got: false } : null;
+  S2.shards = []; S2.shardT = 2.5; S2.parts = []; S2.state = "intro"; S2.msgT = 0; S2.surr = 25; S2.surrTo = 25; S2.qi = 0; S2.arrows = null;
+  paintS2Hud(); paintS2Q();
+  showControls("pad");
+}
+COVER_ACT.run = function () { S2.state = "play"; paintS2Q(); };
+function paintS2Hud() { $("c-lv").innerHTML = "STAGE 2 · ENERGY HILL<span>HILL " + (S2.ri + 1) + "/" + RUNS.length + " · " + S2.R.name + "</span>"; $("c-pts").textContent = G.points; }
+function paintS2Q(html) {
+  var R = S2.R;
+  $("c-q").innerHTML = html || ('<p class="qhead">HILL ' + (S2.ri + 1) + " · " + R.name + '</p><p class="qeqline">' + R.eq + '</p><p class="qhint">' + R.tip + "</p>");
+}
+function need() { return S2.R.yR - S2.peak; }
+function ground(x) {
+  var R = S2.R;
+  if (x <= X1) return R.yR;
+  if (x <= XP) return cosI(R.yR, S2.peak, (x - X1) / (XP - X1));
+  if (x <= X2) return cosI(S2.peak, R.yProd, (x - XP) / (X2 - XP));
+  return R.yProd;
+}
+function groundAt(x, peak) { var R = S2.R; if (x <= X1) return R.yR; if (x <= XP) return cosI(R.yR, peak, (x - X1) / (XP - X1)); if (x <= X2) return cosI(peak, R.yProd, (x - XP) / (X2 - XP)); return R.yProd; }
+function updHill(dt) {
+  S2.parts = S2.parts.filter(function (p) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; return p.t < p.life; });
+  S2.surr += (S2.surrTo - S2.surr) * Math.min(1, dt * 2);
+  S2.peak += (S2.peakTo - S2.peak) * Math.min(1, dt * 3);
+  if (S2.msgT > 0) S2.msgT -= dt;
+  var h = S2.hero, R = S2.R;
+  if (S2.state === "play") {
+    var dir = (K.r ? 1 : 0) - (K.l ? 1 : 0), sp = 110;
+    if (dir) h.face = dir;
+    var nx = Math.max(52, Math.min(XP + 2, h.x + dir * sp * dt));
+    // the hump: you can only climb as high as your energy line
+    if (dir > 0 && nx > X1 && R.yR - ground(nx) > S2.E + 1) {
+      nx = h.x - 4;
+      if (S2.msgT <= 0) { G.s2.slides++; Sound.slide(); toast("<b>Not enough energy!</b> You need to reach the top of the hump: that is the activation energy.", true, 3); S2.msgT = 3.2; }
+    }
+    h.x = nx;
+    if (K.jq) { K.jq = false; if (h.on && h.x < X1 + 4) { h.vy = -340; h.on = false; Sound.jump(); } }
+    if (!h.on) { h.vy += 900 * dt; h.y += h.vy * dt; if (h.y >= ground(h.x)) { h.y = ground(h.x); h.on = true; h.vy = 0; } }
+    else h.y = ground(h.x);
+    // orbs
+    S2.orbs.forEach(function (o) {
+      if (o.got) { o.t -= dt; if (o.t <= 0 && S2.E < need()) o.got = false; return; }
+      if (Math.abs(o.x - h.x) < 18 && o.y > h.y - 50 && o.y < h.y + 6) {
+        o.got = true; o.t = 2.5; S2.E = Math.min(need() + 8, S2.E + S2.val); addPoints(10); Sound.orb();
+        for (var i = 0; i < 8; i++) S2.parts.push({ x: o.x, y: o.y, vx: (Math.random() - .5) * 120, vy: (Math.random() - .5) * 120, t: 0, life: .5, c: "#FCE883" });
+        if (S2.E >= need() - 1 && S2.msgT <= 0) { toast("<b>Enough energy!</b> Run over the hump ▶", false, 2.5); S2.msgT = 2; }
+      }
+    });
+    if (S2.catItem && !S2.catItem.got && Math.abs(S2.catItem.x - h.x) < 18 && S2.catItem.y > h.y - 50 && S2.catItem.y < h.y + 6) {
+      S2.catItem.got = true; S2.cat = true; S2.peakTo = R.yPc; addPoints(50); Sound.clear();
+      if (S2.E > R.yR - R.yPc + 8) S2.E = R.yR - R.yPc + 8;
+      toast("<b>Catalyst! MnO₂</b> gives a new route with a <b>lower activation energy</b>. The products are the same.", false, 4);
+    }
+    // ice shards from Dr. Freezeburn
+    if (R.shards) {
+      S2.shardT -= dt;
+      if (S2.shardT <= 0) { S2.shardT = 2.6 + Math.random() * 1.6; S2.shards.push({ x: 60 + Math.random() * (X1 - 70), y: 30, vy: 150 }); }
+      S2.shards = S2.shards.filter(function (s) {
+        s.y += s.vy * dt;
+        if (Math.abs(s.x - h.x) < 14 && s.y > h.y - 44 && s.y < h.y) {
+          S2.E = Math.max(0, S2.E - S2.val); G.s2.frozen++; Sound.freeze();
+          for (var i = 0; i < 10; i++) S2.parts.push({ x: s.x, y: s.y, vx: (Math.random() - .5) * 160, vy: (Math.random() - .5) * 160, t: 0, life: .5, c: "#9FE8F0" });
+          if (S2.msgT <= 0) { toast("<b>Brrr!</b> Dr. Freezeburn's ice drained some of your energy.", true, 2.5); S2.msgT = 2.6; }
+          return false;
+        }
+        return s.y < ground(s.x);
+      });
+    }
+    if (h.x >= XP - 1 && S2.E >= need() - 1) { S2.state = "cross"; addPoints(100); Sound.level(); }
+  } else if (S2.state === "cross") {
+    h.x += 120 * dt; h.y = ground(h.x); h.face = 1;
+    if (Math.random() < .5) {
+      var exo = R.kind === "exo";
+      S2.parts.push(exo ? { x: h.x, y: h.y - 20, vx: 40 + Math.random() * 80, vy: -80 - Math.random() * 80, t: 0, life: 1, c: pick(["#FF8243", "#FCE883"]) }
+        : { x: 420 - Math.random() * 30, y: 40 + Math.random() * 60, vx: -(h.x > 0 ? 60 : 0), vy: 60 + Math.random() * 60, t: 0, life: 1, c: "#2EF2E0" });
+    }
+    S2.surrTo = R.kind === "exo" ? 33 : 18;
+    if (h.x >= X2 + 46) { S2.state = "label"; startLabel(); }
+  }
+}
+function arrowSet() {
+  var R = S2.R, arr;
+  if (R.cat) arr = [["eacat", XP, R.yR, R.yPc], ["ea", XP - 34, R.yR, R.yP], ["dh", 400, R.yR, R.yProd], ["rev", XP + 30, R.yProd, R.yPc]];
+  else arr = [["ea", XP, R.yR, R.yP], ["rev", XP + 32, R.yProd, R.yP], ["dh", 400, R.yR, R.yProd], ["tot", 60, AY, R.yP]];
+  var letters = shuffle(["A", "B", "C", "D"]), L = {};
+  arr.forEach(function (a, i) { a.push(letters[i]); L[a[0]] = letters[i]; });
+  return { list: arr, L: L };
+}
+function startLabel() {
+  S2.arrows = arrowSet(); S2.qi = 0;
+  var R = S2.R;
+  hideToast(); S2.shards = [];
+  S2.heatMsg = R.kind === "exo" ? "🔥 Heat was given out to the surroundings: their temperature rose." : "❄️ Heat was taken in from the surroundings: their temperature fell.";
+  showControls("choices"); askLabel();
+}
+function labelQ(key) {
+  var R = S2.R, L = S2.arrows.L, exo = R.kind === "exo";
+  function letters(right, err) { return ["A", "B", "C", "D"].map(function (k) { return { t: "Arrow " + k, ok: k === L[right], err: err }; }); }
+  if (key === "ea") return { type: "profile", q: "Which arrow shows the <b>activation energy, E<span class=\"sub\">a</span></b>?", opts: letters("ea", "eaarrow"), why: "Ea is the climb from the reactants up to the top of the hump: arrow " + L.ea + ".", right: "Arrow " + L.ea };
+  if (key === "dh") return { type: "profile", q: "Which arrow shows the <b>enthalpy change, ΔH</b>?", opts: letters("dh", "dharrow"), why: "ΔH goes from the reactants' level to the products' level: arrow " + L.dh + ".", right: "Arrow " + L.dh };
+  if (key === "eacat") return { type: "catalyst", q: "Which arrow shows the <b>activation energy with the catalyst</b>?", opts: letters("eacat", "catalyst"), why: "With MnO₂ the hump is lower. Its Ea runs from the reactants to the top of the lower hump: arrow " + L.eacat + ".", right: "Arrow " + L.eacat };
+  if (key === "sign") return { type: "sign", q: "So for " + R.eq + ", ΔH is…", opts: shuffle([
+      { t: exo ? "negative: exothermic" : "positive: endothermic", ok: true },
+      { t: exo ? "positive: endothermic" : "negative: exothermic", err: "sign" },
+      { t: exo ? "positive: exothermic" : "negative: endothermic", err: "sign" },
+      { t: exo ? "negative: endothermic" : "positive: exothermic", err: "sign" }]),
+    why: exo ? "The products are lower than the reactants. Energy was given out, so ΔH is negative." : "The products are higher than the reactants. Energy was taken in, so ΔH is positive.", right: exo ? "negative: exothermic" : "positive: endothermic" };
+  if (key === "break") return { type: "bonds", q: "Going up the hump, the H–H and Cl–Cl bonds broke. Breaking bonds is…", opts: shuffle([
+      { t: "endothermic: energy is taken in", ok: true }, { t: "exothermic: energy is given out", err: "bonds" },
+      { t: "neither: no energy change", err: "bonds" }, { t: "exothermic: energy is taken in", err: "bonds" }]),
+    why: "You need to put energy in to pull atoms apart, so bond breaking is endothermic.", right: "endothermic: energy is taken in" };
+  if (key === "make") return { type: "bonds", q: "Coming down, H–Cl bonds formed. The reaction is exothermic overall because…", opts: shuffle([
+      { t: "more energy is given out making H–Cl bonds than is taken in breaking H–H and Cl–Cl bonds", ok: true },
+      { t: "more energy is taken in breaking H–H and Cl–Cl bonds than is given out making H–Cl bonds", err: "balance" },
+      { t: "making H–Cl bonds takes in energy", err: "bonds" },
+      { t: "no bonds are broken, only made", err: "bonds" }]),
+    why: "Energy out (bond making) is bigger than energy in (bond breaking), so energy is given out overall.", right: "more energy given out making bonds than taken in breaking bonds" };
+  if (key === "catwhat") return { type: "catalyst", q: "Compare the two humps. What did the MnO₂ catalyst do?", opts: shuffle([
+      { t: "Lowered Ea; ΔH stayed the same", ok: true }, { t: "Lowered Ea and made ΔH more negative", err: "catalyst" },
+      { t: "Lowered ΔH; Ea stayed the same", err: "catalyst" }, { t: "Raised the energy of the products", err: "catalyst" }]),
+    why: "The catalyst gave a lower hump, but the reactants and products are at the same levels, so ΔH did not change.", right: "Lowered Ea; ΔH stayed the same" };
+}
+function askLabel() {
+  var key = S2.R.qs[S2.qi], q = labelQ(key); S2.q = q;
+  paintS2Q('<p class="qhead">HILL ' + (S2.ri + 1) + " · LABEL THE DIAGRAM · " + (S2.qi + 1) + "/" + S2.R.qs.length + '</p><p class="qhint">' + S2.heatMsg + '</p><p class="qtext">' + q.q + "</p>");
+  var long = q.opts.some(function (o) { return o.t.length > 30; });
+  $("c-choices").className = "choices" + (long ? " one" : "");
+  $("c-choices").innerHTML = q.opts.map(function (o, i) { return '<button type="button" class="qopt" data-i="' + i + '"><span class="k">' + "ABCD"[i] + '</span><span class="tx">' + esc(o.t) + "</span></button>"; }).join("");
+  fit();
+}
+$("c-choices").addEventListener("click", function (e) {
+  var nb = e.target.closest("[data-next]"); if (nb) { Sound.tap(); nextLabel(); return; }
+  var b = e.target.closest(".qopt"); if (!b || b.disabled || !S2 || !S2.q) return;
+  var q = S2.q, o = q.opts[+b.dataset.i], ok = !!o.ok;
+  var btns = $("c-choices").querySelectorAll(".qopt");
+  q.opts.forEach(function (op, j) { btns[j].disabled = true; if (op.ok) btns[j].classList.add("right"); });
+  if (!ok) btns[+b.dataset.i].classList.add("wrong");
+  G.s2.total++; if (ok) { G.s2.right++; addPoints(100); Sound.ok(); } else Sound.bad();
+  logAnswer("s2", q.type, ok, ok ? null : o.err, S2.R.name + ": " + fxt(stripTags(q.q)), o.t, q.right);
+  var fb = document.createElement("div"); fb.style.gridColumn = "1 / -1"; fb.style.display = "flex"; fb.style.flexDirection = "column"; fb.style.gap = "8px";
+  fb.innerHTML = '<p class="qfbline">' + (ok ? '<b class="ok">✓ Correct!</b> ' : '<b class="no">✗ Not quite.</b> ') + esc(q.why) + '</p><button class="pbtn" type="button" data-next="1">' + (S2.qi + 1 < S2.R.qs.length ? "NEXT ▶" : "CONTINUE ▶") + "</button>";
+  $("c-choices").appendChild(fb); fit();
+  setTimeout(function () { var n = fb.querySelector("button"); if (n) n.focus(); }, 50);
+});
+function nextLabel() {
+  S2.qi++;
+  if (S2.qi < S2.R.qs.length) return askLabel();
+  S2.ri++;
+  if (S2.ri < RUNS.length) {
+    Sound.level(); buildRun();
+    cover('<span class="lvname">HILL ' + (S2.ri + 1) + " OF " + RUNS.length + "</span><h2>" + S2.R.name + '</h2><p class="big-eq">' + S2.R.eq + "</p><p>" + S2.R.tip + "</p>" +
+      '<button class="pbtn" type="button" data-go="run">GO ▶</button>');
+    return;
+  }
+  S2.state = "done"; Sound.level(); showControls("pad");
+  cover('<span class="lvname">STAGE 2 COMPLETE</span><h2>KING OF THE HILL!</h2><p>You labelled <b>' + G.s2.right + " of " + G.s2.total + "</b> correctly.</p><p>Dr. Freezeburn has nowhere left to hide. Final showdown!</p>" +
+    (SP.boss.ok ? '<img src="' + IMG.boss + '" alt="">' : "") + '<button class="pbtn" type="button" data-go="boss">BOSS FIGHT ▶</button>');
+}
+function arrowDraw(x, y0, y1, letter) {
+  ctx.strokeStyle = "#FCE883"; ctx.fillStyle = "#FCE883"; ctx.lineWidth = 3;
+  var dir = y1 < y0 ? -1 : 1;
+  ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1 - dir * 8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x - 7, y1 - dir * 11); ctx.lineTo(x + 7, y1 - dir * 11); ctx.closePath(); ctx.fill();
+  var my = (y0 + y1) / 2;
+  ctx.fillStyle = "#2A2448"; ctx.strokeStyle = "#FCE883"; ctx.lineWidth = 2; rr(x + 6, my - 11, 22, 22, 3); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#FCE883"; ctx.font = "10px 'Press Start 2P', monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(letter, x + 17, my + 1);
+  ctx.textBaseline = "alphabetic";
+}
+function drawCurve(peak, style) {
+  var R = S2.R;
+  ctx.beginPath(); ctx.moveTo(AX + 2, R.yR);
+  for (var x = AX + 2; x <= W - 8; x += 3) ctx.lineTo(x, groundAt(x, peak));
+  if (style === "fill") { ctx.lineTo(W - 8, AY); ctx.lineTo(AX + 2, AY); ctx.closePath(); return; }
+}
+function drawHill() {
+  var R = S2.R;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#0D0B1A"; ctx.fillRect(0, 0, W, H);
+  // stars
+  ctx.fillStyle = "rgba(255,255,255,.5)"; [[70, 30], [150, 60], [300, 24], [360, 90], [210, 40], [120, 100]].forEach(function (s) { ctx.fillRect(s[0], s[1], 2, 2); });
+  // ground fill
+  drawCurve(S2.peak, "fill"); var g = ctx.createLinearGradient(0, 100, 0, AY); g.addColorStop(0, "#2A2448"); g.addColorStop(1, "#19152E"); ctx.fillStyle = g; ctx.fill();
+  if (S2.cat || (R.cat && S2.state === "label")) { ctx.save(); ctx.setLineDash([7, 6]); ctx.strokeStyle = "rgba(46,242,224,.45)"; ctx.lineWidth = 3; drawCurve(R.yP); ctx.stroke(); ctx.restore(); }
+  ctx.strokeStyle = S2.cat ? "#FF7FB0" : "#2EF2E0"; ctx.lineWidth = 4; drawCurve(S2.peak); ctx.stroke();
+  // axes
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(AX, AY); ctx.lineTo(AX, 14); ctx.stroke(); ctx.beginPath(); ctx.moveTo(AX - 6, 22); ctx.lineTo(AX, 12); ctx.lineTo(AX + 6, 22); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(AX, AY); ctx.lineTo(W - 8, AY); ctx.stroke();
+  ctx.fillStyle = "#B8B2D6"; ctx.font = "600 12px 'Open Sans', sans-serif"; ctx.textAlign = "center";
+  ctx.save(); ctx.translate(18, 220); ctx.rotate(-Math.PI / 2); ctx.fillText("energy", 0, 0); ctx.restore();
+  ctx.fillText("progress of reaction →", 250, AY + 20);
+  // species labels
+  ctx.fillStyle = "#fff"; ctx.font = "700 13px 'Open Sans', sans-serif";
+  ctx.fillText(R.L, (AX + X1) / 2 + 22, R.yR + 22);
+  ctx.fillText(R.R, (X2 + W) / 2, R.yProd + 22);
+  if (R.top) { ctx.fillStyle = "#FCE883"; ctx.font = "700 12px 'Open Sans', sans-serif"; ctx.fillText(R.top, XP, S2.peak - 14); ctx.font = "600 10px 'Open Sans', sans-serif"; ctx.fillStyle = "#B8B2D6"; ctx.fillText("(all bonds broken)", XP, S2.peak - 2 - 0); }
+  // energy needed marker + your energy line
+  if (S2.state === "play" || S2.state === "intro") {
+    var ey = R.yR - S2.E, enough = S2.E >= need() - 1;
+    ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = "rgba(255,127,176,.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(AX, S2.peak); ctx.lineTo(XP, S2.peak); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = "#FF7FB0"; ctx.font = "7px 'Press Start 2P', monospace"; ctx.textAlign = "left"; ctx.fillText("TOP OF HUMP", AX + 6, S2.peak - 6);
+    ctx.save(); ctx.setLineDash([8, 4]); ctx.strokeStyle = enough ? "#4CF08A" : "#FCE883"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(AX, ey); ctx.lineTo(X1 + 30, ey); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = enough ? "#4CF08A" : "#FCE883"; ctx.fillText("YOUR ENERGY", AX + 6, ey - 6);
+    // energy bar on the axis
+    ctx.fillStyle = enough ? "#4CF08A" : "#FCE883"; ctx.fillRect(AX - 7, ey, 5, R.yR - ey);
+  }
+  // orbs & catalyst
+  var tt = performance.now() / 300;
+  S2.orbs.forEach(function (o) {
+    if (o.got || S2.state !== "play" && S2.state !== "intro") return;
+    var bob = Math.sin(tt + o.x) * 3;
+    ctx.fillStyle = "rgba(252,232,131,.25)"; ctx.beginPath(); ctx.arc(o.x, o.y + bob, 13, 0, 7); ctx.fill();
+    ctx.fillStyle = "#FCE883"; ctx.beginPath(); ctx.arc(o.x, o.y + bob, 8, 0, 7); ctx.fill();
+    ctx.fillStyle = "#FF8243"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⚡", o.x, o.y + bob + 1); ctx.textBaseline = "alphabetic";
+  });
+  if (S2.catItem && !S2.catItem.got && S2.state !== "label") {
+    var c = S2.catItem; ctx.fillStyle = "#FF7FB0"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; rr(c.x - 18, c.y - 12, 36, 22, 4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#0D0B1A"; ctx.font = "800 11px 'Open Sans', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("MnO₂", c.x, c.y); ctx.textBaseline = "alphabetic";
+  }
+  // shards
+  S2.shards.forEach(function (s) {
+    ctx.fillStyle = "rgba(159,232,240,.25)"; ctx.beginPath(); ctx.ellipse(s.x, ground(s.x), 10, 3, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = "#9FE8F0"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(s.x, s.y + 12); ctx.lineTo(s.x - 6, s.y - 6); ctx.lineTo(s.x + 6, s.y - 6); ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+  if (R.shards && S2.state === "play") drawSprite("boss", 120, 46, 36, false);
+  // surroundings thermometer
+  thermometer(W - 26, 34, 120, S2.surr, 10, 40, "");
+  ctx.fillStyle = "#fff"; ctx.font = "7px 'Press Start 2P', monospace"; ctx.textAlign = "right"; ctx.fillText("SURROUNDINGS", W - 6, 18);
+  ctx.fillText(t1(S2.surr) + "°C", W - 42, 70);
+  // particles
+  S2.parts.forEach(function (p) { ctx.globalAlpha = Math.max(0, 1 - p.t / p.life); ctx.fillStyle = p.c; ctx.fillRect(p.x - 2, p.y - 2, 5, 5); }); ctx.globalAlpha = 1;
+  // arrows when labelling
+  if (S2.state === "label" && S2.arrows) {
+    ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = "rgba(255,255,255,.45)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(X1, R.yR); ctx.lineTo(410, R.yR); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(AX, R.yP); ctx.lineTo(XP + 40, R.yP); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(XP + 24, R.yProd); ctx.lineTo(X2 + 10, R.yProd); ctx.stroke();
+    if (R.yPc) { ctx.beginPath(); ctx.moveTo(XP - 10, R.yPc); ctx.lineTo(XP + 40, R.yPc); ctx.stroke(); }
+    ctx.restore();
+    S2.arrows.list.forEach(function (a) { arrowDraw(a[1], a[2], a[3], a[4]); });
+  }
+  // hero
+  if (S2.state !== "label") drawSprite("hero", S2.hero.x, S2.hero.y + 2, 44, S2.hero.face < 0);
+  else drawSprite("hero", 372, R.yProd + 2, 34, false);
+}
+
+/* =================== BOSS FIGHT =================== */
+var B = null, raf = 0;
+function paintBossSprites() {
+  if (!$("b-hero")) return;
+  $("b-hero").innerHTML = domArt("hero"); $("b-hero").classList.toggle("pic", SP.hero.ok);
+  $("b-mon").innerHTML = domArt("boss"); $("b-mon").classList.toggle("pic", SP.boss.ok);
+  $("b-bolt").innerHTML = pixelSVG(BOLT_MAP, BOLT_PAL);
+}
+paintBossSprites();
+$("b-name").textContent = BOSS_NAME;
+var hurtTimers = {};
+function showHurt(id, key, base) {
+  var img = $(id).querySelector("img"); if (!img || !SP[key].ok) return;
+  clearTimeout(hurtTimers[id]); img.src = IMG[key];
+  hurtTimers[id] = setTimeout(function () { var i = $(id).querySelector("img"); if (i) i.src = IMG[base]; }, HURT_MS);
+}
+function startBoss() {
+  stopLoop(); MODE = null; G.attempt++;
+  B = { hp: HITS_TO_WIN[G.lv], maxhp: HITS_TO_WIN[G.lv], hearts: HEARTS, max: HEARTS, n: 0, correct: 0, phase2: false, combo: 0, bestCombo: 0, bag: [], last: null };
+  show("scr-boss");
+  $("b-hero").className = "sprite hero-sp"; $("b-mon").className = "sprite mon-sp";
+  clearTimeout(hurtTimers["b-hero"]); clearTimeout(hurtTimers["b-mon"]); paintBossSprites();
+  paintBossHud(); nextQ();
+}
+function paintBossHud(breakIdx) {
+  $("b-hearts").innerHTML = heartsHTML(B.hearts, B.max, breakIdx);
+  var p = Math.max(0, B.hp) / B.maxhp * 100;
+  $("b-left").textContent = "· " + Math.max(0, B.hp) + (B.hp === 1 ? " HIT" : " HITS") + " LEFT";
+  $("b-hp").style.width = p + "%"; $("b-hp").className = p <= 30 ? "low" : "";
+}
+function drawQ() {
+  var pool = BOSS_POOL[G.lv][B.phase2 ? "p2" : "p1"];
+  if (!B.bag.length) B.bag = shuffle(pool.map(function (x, i) { return i; }));
+  var k = B.bag.shift(); if (k === B.last && B.bag.length) { B.bag.push(k); k = B.bag.shift(); }
+  B.last = k; var e = pool[k]; return typeof e === "function" ? e() : e;
+}
+function nextQ() {
+  if (B.hp <= 0 || B.hearts <= 0) return bossEnd();
+  $("b-fb").hidden = true; $("b-bolt").classList.remove("fly");
+  var raw = drawQ(), isLetters = /^Arrow [A-D]$/.test(raw.opts[0][0]);
+  var opts = raw.opts.map(function (o) { return { t: o[0], ok: o[1] === true, err: o[1] === true ? null : o[1] }; });
+  if (!isLetters && !/^Experiment/.test(opts[0].t)) opts = shuffle(opts);
+  var right = opts.filter(function (o) { return o.ok; })[0].t;
+  B.q = { type: raw.type, text: raw.q, eq: raw.eq || "", opts: opts, why: raw.why, right: right };
+  B.n++;
+  $("b-qtype").textContent = (B.phase2 ? "PHASE 2 · " : "") + "ATTACK " + B.n + " · " + TYPES[raw.type].toUpperCase();
+  $("b-qeq").hidden = !B.q.eq; $("b-qeq").innerHTML = B.q.eq;
+  $("b-qtext").innerHTML = esc(B.q.text);
+  $("b-opts").innerHTML = opts.map(function (o, i) { return '<button type="button" class="qopt" data-i="' + i + '"><span class="k">' + "ABCD"[i] + '</span><span class="tx">' + esc(o.t) + "</span></button>"; }).join("");
+  B.t0q = performance.now(); B.secs = BOSS_SECS[G.lv]; B.locked = false;
+  tick();
+}
+function tick() {
+  var el = (performance.now() - B.t0q) / 1000, left = Math.max(0, B.secs - el);
+  $("b-cbar").style.width = Math.min(100, el / B.secs * 100) + "%";
+  $("b-secs").textContent = Math.ceil(left);
+  $("b-charge").classList.toggle("warn", left <= 10);
+  if (left <= 0) { answer(-1); return; }
+  raf = requestAnimationFrame(tick);
+}
+function stopBossTimer() { cancelAnimationFrame(raf); }
+$("b-opts").addEventListener("click", function (e) { var b = e.target.closest(".qopt"); if (b && !B.locked) answer(+b.dataset.i); });
+function bossKey(e) {
+  if (!B) return;
+  if (!B.locked) { var n = { 1: 0, 2: 1, 3: 2, 4: 3, a: 0, b: 1, c: 2, d: 3, A: 0, B: 1, C: 2, D: 3 }[e.key]; if (n != null) { e.preventDefault(); answer(n); } }
+}
+function floatText(txt, onBoss, hurt) {
+  var s = document.createElement("span"); s.className = "dmg" + (hurt ? " hurt" : ""); s.textContent = txt;
+  s.style[onBoss ? "right" : "left"] = onBoss ? "12%" : "8%"; s.style.top = "30%";
+  $("b-stage").appendChild(s); setTimeout(function () { s.remove(); }, 1100);
+}
+function retrigger(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function answer(i) {
+  B.locked = true; stopBossTimer();
+  var q = B.q, el = (performance.now() - B.t0q) / 1000, o = i >= 0 ? q.opts[i] : null, ok = !!(o && o.ok);
+  var btns = $("b-opts").querySelectorAll(".qopt");
+  q.opts.forEach(function (op, j) { btns[j].disabled = true; if (op.ok) btns[j].classList.add("right"); });
+  if (o && !ok) btns[i].classList.add("wrong");
+  var err = ok ? null : (o ? o.err : "timeout"), msg;
+  if (ok) {
+    B.correct++; B.combo++; B.bestCombo = Math.max(B.bestCombo, B.combo);
+    var crit = el <= CRIT_SECS;
+    B.hp = Math.max(0, B.hp - 1);
+    G.points += (crit ? 150 : 100) + Math.round(Math.max(0, B.secs - el)) * 2;
+    retrigger($("b-hero"), "atk"); retrigger($("b-bolt"), "fly");
+    setTimeout(function () { showHurt("b-mon", "bossHurt", "boss"); retrigger($("b-mon"), "hit"); floatText(crit ? "CRITICAL!" : "HIT!", true); Sound.hit(); paintBossHud(); }, 380);
+    msg = '<span class="ans">' + (crit ? "Critical hit! Speed bonus." : "Direct hit!") + "</span> " + (B.hp > 0 ? B.hp + " more to go." : "") + '<br><span class="work">' + esc(q.why) + "</span>";
+  } else {
+    B.combo = 0; B.hearts--;
+    retrigger($("b-mon"), "atk");
+    setTimeout(function () { showHurt("b-hero", "heroHurt", "hero"); retrigger($("b-hero"), "hit"); retrigger($("b-flash"), "on"); floatText("-1 ♥", false, true); Sound.hurt(); paintBossHud(B.hearts); }, 300);
+    msg = (err === "timeout" ? "Dr. Freezeburn struck first. You ran out of time." : "<b>" + esc(ERR[err].label) + ".</b> " + esc(ERR[err].tip)) +
+      '<br><span class="ans">Answer: ' + esc(q.right) + '</span><br><span class="work">' + esc(q.why) + "</span>";
+  }
+  logAnswer("boss", q.type, ok, err, q.text, o ? o.t : "(no answer)", q.right);
+  if (!B.phase2 && B.hp > 0 && B.hp <= B.maxhp / 2) {
+    B.phase2 = true; B.bag = [];
+    setTimeout(function () { var p = document.createElement("div"); p.className = "phase"; p.textContent = "FREEZEBURN IS BOILING!"; $("b-stage").appendChild(p); setTimeout(function () { p.remove(); }, 2200); }, 700);
+  }
+  var over = B.hp <= 0 || B.hearts <= 0;
+  $("b-fb").hidden = false; $("b-fb").className = "qfb" + (ok ? "" : " no");
+  $("b-fb-msg").innerHTML = msg;
+  $("b-next").textContent = over ? (B.hp <= 0 ? "FINISH HIM ▶" : "CONTINUE ▶") : "NEXT ATTACK ▶";
+  setTimeout(function () { $("b-next").focus({ preventScroll: true }); if (window.matchMedia("(max-width: 759px)").matches) $("b-fb").scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 200);
+}
+$("b-next").addEventListener("click", function () { if (B.hp <= 0 || B.hearts <= 0) bossEnd(); else nextQ(); });
+function bossEnd() {
+  stopBossTimer(); Music.fadeOut();
+  var win = B.hp <= 0; B.win = win;
+  if (win) $("b-mon").classList.add("dead"); else $("b-hero").classList.add("dead");
+  finish(true);
+  setTimeout(function () {
+    show("scr-bend"); Music.stop();
+    $("scr-bend").className = "bend" + (win ? "" : " lose");
+    $("be-title").textContent = win ? "VICTORY!" : "YOU FROZE!";
+    $("be-sprite").innerHTML = domArt(win ? "hero" : "heroHurt");
+    $("be-sprite").className = "sprite" + (win || SP.heroHurt.ok ? "" : " down");
+    $("be-msg").textContent = win ? "Dr. Freezeburn is defeated and the lab's thermometers are back to normal! " + B.correct + " hits in " + B.n + " attacks." :
+      "Dr. Freezeburn knocked you out. You landed " + B.correct + " of " + B.maxhp + " hits. Try again: you start straight at the boss.";
+    $("be-retry").hidden = win;
+    if (win) { Sound.win(); Confetti.go(); } else Sound.lose();
+  }, win ? 700 : 500);
+}
+$("be-go").addEventListener("click", function () { Confetti.stop(); finish(false, true); });
+$("be-retry").addEventListener("click", function () { startBoss(); });
+
+/* =================== RESULTS =================== */
+function finish(silent, showIt) {
+  var secs = (Date.now() - G.t0) / 1000, S = { secs: secs };
+  var log = G.log.filter(function (x) { return x.phase !== "boss" || x.attempt === G.attempt; }); // stages + this boss attempt
+  S.correct = log.filter(function (x) { return x.ok; }).length; S.total = log.length;
+  S.pct = S.total ? Math.round(S.correct / S.total * 100) : 0;
+  var byType = {}; Object.keys(TYPES).forEach(function (k) { byType[k] = [0, 0]; });
+  log.forEach(function (x) { byType[x.type][1]++; if (x.ok) byType[x.type][0]++; });
+  var errs = {}; log.forEach(function (x) { if (!x.ok) errs[x.err] = (errs[x.err] || 0) + 1; });
+  var errKeys = Object.keys(errs).sort(function (a, b) { return errs[b] - errs[a]; });
+  var wrongTypes = Object.keys(byType).filter(function (k) { return byType[k][1] > byType[k][0]; }).sort(function (a, b) { return (byType[b][1] - byType[b][0]) - (byType[a][1] - byType[a][0]); });
+  S.byType = byType; S.errs = errs; S.errKeys = errKeys; S.wrongTypes = wrongTypes; S.log = log;
+  if (!silent || showIt) paintResults(S);
+  if (silent) sendResults(S);
+  var best = load("best", {}); if (best[G.lv] == null || G.points > best[G.lv]) { best[G.lv] = G.points; store("best", best); }
+  return S;
+}
+var PHASE_NAME = { s1: "Thermo Blocks", s2: "Energy Hill", boss: "Boss" };
+function paintResults(S) {
+  show("scr-result");
+  $("res-ring").style.setProperty("--p", S.pct); $("res-pct").textContent = S.pct + "%";
+  $("res-title").textContent = B && B.win ? "The lab is saved!" : "Freezeburn got away… for now";
+  $("res-sub").textContent = "Thermo Blocks: " + G.s1.right + "/" + G.s1.total + " right. " + (G.lv === "hard" ? "Energy Hill: " + G.s2.right + "/" + G.s2.total + " right. " : "") +
+    "Boss: " + (B ? B.correct + " hits from " + B.n + " attacks" + (G.attempt > 1 ? " (attempt " + G.attempt + ")" : "") : "not reached") + ".";
+  $("res-correct").textContent = S.correct + "/" + S.total;
+  $("res-acc").textContent = S.pct + "%";
+  $("res-time").textContent = fmtTime(S.secs);
+  $("res-points").textContent = G.points;
+  $("res-bars").innerHTML = Object.keys(TYPES).filter(function (k) { return S.byType[k][1]; }).map(function (k) {
+    var b = S.byType[k], p = Math.round(b[0] / b[1] * 100);
+    return '<div class="bar-row"><span>' + esc(TYPES[k]) + '</span><div class="bar"><i class="' + (p < 60 ? "low" : "") + '" style="width:' + p + '%"></i></div><span class="n">' + b[0] + "/" + b[1] + "</span></div>";
+  }).join("");
+  $("res-weak").innerHTML = S.errKeys.length ? S.errKeys.slice(0, 3).map(function (k) { return "<li><b>" + esc(ERR[k].label) + " ×" + S.errs[k] + "</b><span>" + esc(ERR[k].tip) + "</span></li>"; }).join("") :
+    '<li class="good"><b>No mistakes!</b><span>Every answer was right first time.</span></li>';
+  var wrong = S.log.filter(function (x) { return !x.ok; });
+  $("res-review").innerHTML = wrong.length ? wrong.slice(0, 8).map(function (x) {
+    return '<li><span class="tag">' + PHASE_NAME[x.phase] + " · " + esc(TYPES[x.type]) + "</span><br>" + esc(x.text) + '<br><span class="you">You: ' + esc(x.picked) + '</span><br><span class="key">Answer: ' + esc(x.right) + "</span></li>";
+  }).join("") : "<li>Nothing to review. Every one was right.</li>";
+}
+function buildPayload(S) {
+  var lvName = G.lv === "hard" ? "Pure Chemistry" : "Combined Science";
+  var types = Object.keys(TYPES).filter(function (k) { return S.byType[k][1]; }).map(function (k) { return TYPES[k] + " " + S.byType[k][0] + "/" + S.byType[k][1]; }).join(", ");
+  var errs = S.errKeys.length ? S.errKeys.map(function (k) { return ERR[k].label + " x" + S.errs[k]; }).join("; ") : "none";
+  var most = S.wrongTypes.length ? S.wrongTypes.slice(0, 3).map(function (k) { return TYPES[k]; }).join(", ") : "none";
+  var summary = "Boss attempt " + G.attempt + " (" + (B.win ? "won" : "lost") + ") | Level: " + lvName +
+    " | Accuracy: " + S.pct + "% | Wrong most: " + most +
+    " | Thermo Blocks: " + G.s1.right + "/" + G.s1.total + ", lines cleared " + G.s1.clears +
+    (G.lv === "hard" ? " | Energy Hill: " + G.s2.right + "/" + G.s2.total + ", slid back " + G.s2.slides + ", frozen " + G.s2.frozen : "") +
+    " | Boss: hits " + B.correct + "/" + B.n + " (needed " + B.maxhp + "), best combo " + B.bestCombo +
+    " | By topic: " + types + " | Errors: " + errs;
+  var wrong = S.log.filter(function (x) { return !x.ok; }).map(function (x) {
+    return "[" + PHASE_NAME[x.phase] + "] " + TYPES[x.type] + ": " + x.text + " → picked " + x.picked + " (" + (ERR[x.err] ? ERR[x.err].label : x.err) + "), answer " + x.right;
+  }).join(" | ");
+  return {
+    course: SHEET_TAB, chapter: "Thermo Quest · Boss attempt " + G.attempt + " (" + (B.win ? "won" : "lost") + ") · " + lvName,
+    name: G.student.name, cls: G.student.cls, reg: G.student.reg,
+    score: S.correct, total: S.total, wrong: wrong || "None",
+    time: Math.round(S.secs), points: G.points, summary: summary
+  };
+}
+function post(payload) { return fetch(SUBMIT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) }); }
+function sendResults(S) {
+  var payload = G.payload = buildPayload(S), box = $("send"), msg = $("send-msg"), btn = $("btn-resend");
+  box.className = "send span"; btn.hidden = true;
+  if (!SUBMIT_URL || /nosend/.test(location.hash)) { msg.textContent = "Results not sent (no Google Sheet link set up)."; return; }
+  msg.textContent = "Sending your results to Ms Khoo…";
+  post(payload).then(function () { msg.textContent = "✓ Sent! Ms Khoo has your results."; })
+    .catch(function () { box.className = "send span err"; msg.textContent = "Couldn't send. Check your internet, then tap Try again."; btn.hidden = false; });
+}
+$("btn-resend").addEventListener("click", function () {
+  var box = $("send"); $("btn-resend").hidden = true; $("send-msg").textContent = "Sending…";
+  post(G.payload).then(function () { box.className = "send span"; $("send-msg").textContent = "✓ Sent! Ms Khoo has your results."; })
+    .catch(function () { $("send-msg").textContent = "Still couldn't send. Try again when you're online."; $("btn-resend").hidden = false; });
+});
+$("btn-again").addEventListener("click", function () { Confetti.stop(); newSession(G.student); startBlocks(); });
+$("btn-home").addEventListener("click", function () { Confetti.stop(); show("scr-start"); paintStart(); });
+
+/* =================== CONFETTI =================== */
+var Confetti = {
+  c: $("confetti"), p: [], on: false,
+  go: function () {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var c = this.c, w = c.width = innerWidth, h = c.height = innerHeight, cols = ["#FF8243", "#FFC0CB", "#FCE883", "#069494", "#1F2A2E"];
+    c.hidden = false; this.on = true; this.p = [];
+    for (var i = 0; i < 110; i++) this.p.push({ x: Math.random() * w, y: -Math.random() * h, s: 6 + Math.random() * 8, v: 2 + Math.random() * 3, a: Math.random() * 6, col: cols[i % cols.length] });
+    var self = this, cx = c.getContext("2d"), t0 = performance.now();
+    (function frame(t) {
+      if (!self.on) return;
+      cx.clearRect(0, 0, w, h);
+      self.p.forEach(function (p) { p.y += p.v; p.a += .1; cx.fillStyle = p.col; cx.fillRect(p.x + Math.sin(p.a) * 6, p.y, p.s, p.s * .6); });
+      if (t - t0 < 4000) requestAnimationFrame(frame); else self.stop();
+    })(t0);
+  },
+  stop: function () { this.on = false; this.c.hidden = true; }
+};
+
+if (/debug/.test(location.hash)) window.__TQ = { G: G, S1: function () { return S1; }, S2: function () { return S2; }, B: function () { return B; }, K: K, BQ_EASY: BQ_EASY, BQ_PURE: BQ_PURE, startBoss: startBoss, startHill: startHill, startBlocks: startBlocks, finish: finish, laneMove: laneMove, buildPayload: buildPayload };
+
+})();
+</script>
+</body>
+</html>
