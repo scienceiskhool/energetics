@@ -1268,7 +1268,7 @@ function buildRun() {
   S2.hero = { x: 56, y: R.yR, vy: 0, on: true, face: 1 };
   S2.orbs = ORB_SPOTS.map(function (s) { return { x: s[0], y: R.yR - s[1], got: false, t: 0 }; });
   S2.catItem = R.cat ? { x: 118, y: R.yR - 14, got: false } : null;
-  S2.shards = []; S2.shardT = 2.5; S2.parts = []; S2.state = "intro"; S2.msgT = 0; S2.surr = 25; S2.surrTo = 25; S2.qi = 0; S2.arrows = null;
+  S2.shards = []; S2.shardT = 2.5; S2.hurtT = 0; S2.parts = []; S2.state = "intro"; S2.msgT = 0; S2.surr = 25; S2.surrTo = 25; S2.qi = 0; S2.arrows = null;
   paintS2Hud(); paintS2Q();
   showControls("pad");
 }
@@ -1292,6 +1292,7 @@ function updHill(dt) {
   S2.surr += (S2.surrTo - S2.surr) * Math.min(1, dt * 2);
   S2.peak += (S2.peakTo - S2.peak) * Math.min(1, dt * 3);
   if (S2.msgT > 0) S2.msgT -= dt;
+  if (S2.hurtT > 0) S2.hurtT -= dt;
   var h = S2.hero, R = S2.R;
   if (S2.state === "play") {
     var dir = (K.r ? 1 : 0) - (K.l ? 1 : 0), sp = 110;
@@ -1323,11 +1324,11 @@ function updHill(dt) {
     // ice shards from Dr. Freezeburn
     if (R.shards) {
       S2.shardT -= dt;
-      if (S2.shardT <= 0) { S2.shardT = 2.6 + Math.random() * 1.6; S2.shards.push({ x: 60 + Math.random() * (X1 - 70), y: 30, vy: 150 }); }
+      if (S2.shardT <= 0) { S2.shardT = 2.6 + Math.random() * 1.6; S2.shards.push({ x: 60 + Math.random() * (X1 - 70), y: 70, vy: 150 }); }
       S2.shards = S2.shards.filter(function (s) {
         s.y += s.vy * dt;
         if (Math.abs(s.x - h.x) < 14 && s.y > h.y - 44 && s.y < h.y) {
-          S2.E = Math.max(0, S2.E - S2.val); G.s2.frozen++; Sound.freeze();
+          S2.E = Math.max(0, S2.E - S2.val); G.s2.frozen++; Sound.freeze(); S2.hurtT = 1.2;
           for (var i = 0; i < 10; i++) S2.parts.push({ x: s.x, y: s.y, vx: (Math.random() - .5) * 160, vy: (Math.random() - .5) * 160, t: 0, life: .5, c: "#9FE8F0" });
           if (S2.msgT <= 0) { toast("<b>Brrr!</b> Dr. Freezeburn's ice drained some of your energy.", true, 2.5); S2.msgT = 2.6; }
           return false;
@@ -1491,7 +1492,7 @@ function drawHill() {
     ctx.fillStyle = "rgba(159,232,240,.25)"; ctx.beginPath(); ctx.ellipse(s.x, ground(s.x), 10, 3, 0, 0, 7); ctx.fill();
     ctx.fillStyle = "#9FE8F0"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(s.x, s.y + 12); ctx.lineTo(s.x - 6, s.y - 6); ctx.lineTo(s.x + 6, s.y - 6); ctx.closePath(); ctx.fill(); ctx.stroke();
   });
-  if (R.shards && S2.state === "play") drawSprite("boss", 120, 46, 36, false);
+  if (R.shards && S2.state === "play") drawSprite("boss", 120, 80, 64, false);
   // surroundings thermometer
   thermometer(W - 26, 34, 120, S2.surr, 10, 40, "");
   ctx.fillStyle = "#fff"; ctx.font = "7px 'Press Start 2P', monospace"; ctx.textAlign = "right"; ctx.fillText("SURROUNDINGS", W - 6, 18);
@@ -1509,7 +1510,10 @@ function drawHill() {
     S2.arrows.list.forEach(function (a) { arrowDraw(a[1], a[2], a[3], a[4]); });
   }
   // hero
-  if (S2.state !== "label") drawSprite("hero", S2.hero.x, S2.hero.y + 2, 44, S2.hero.face < 0);
+  if (S2.state !== "label") {
+    var hurt = S2.hurtT > 0, blink = hurt && Math.floor(S2.hurtT * 10) % 2 === 0; // flashes while hurt
+    if (!blink) drawSprite(hurt ? "heroHurt" : "hero", S2.hero.x, S2.hero.y + 2, 44, S2.hero.face < 0);
+  }
   else drawSprite("hero", 372, R.yProd + 2, 34, false);
 }
 
